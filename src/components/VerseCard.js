@@ -83,13 +83,17 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
 
             {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
               <Box sx={{ width: '100%', px: 2, pt: 0.5, boxSizing: 'border-box' }}>
-                <Typography variant="caption" align="left">오늘 진행률 ({dailyProgressPercent}%)</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
+                </Box>
                 <LinearProgress variant="determinate" value={dailyProgressPercent} sx={{ height: 6, borderRadius: 3 }}/>
               </Box>
             )}
             {(mode === 'turnBasedNew' || mode === 'turnBasedRecent') && sessionGoal > 0 && !isBrowsingCompleted && (
                 <Box sx={{ width: '100%', px: 2, pt: 0.5, boxSizing: 'border-box' }}>
-                    <Typography variant="caption" align="left">진행률 ({sessionProgressPercent}%)</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                      <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
+                    </Box>
                     <LinearProgress variant="determinate" value={sessionProgressPercent} sx={{ height: 6, borderRadius: 3 }} />
                 </Box>
             )}
