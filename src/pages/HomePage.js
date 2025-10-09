@@ -178,9 +178,9 @@ const HomePage = () => {
   
   const [completedAtSessionStart, setCompletedAtSessionStart] = useState(0);
 
-  useEffect(() => {
+   useEffect(() => {
     setCompletedAtSessionStart(completedToday);
-  }, [mode, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn, completedToday]);
+  }, [mode, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn]);
 
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;

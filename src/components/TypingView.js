@@ -52,14 +52,14 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                     <Tooltip title="복습 종료"><IconButton onClick={() => setIsFocusMode(false)} color="inherit"><FullscreenExitIcon /></IconButton></Tooltip>
                     <Tooltip title="도움말"><IconButton onClick={onHelpClick} color="inherit"><HelpOutlineIcon /></IconButton></Tooltip>
                 </Box>
-                <Box sx={{display: 'flex', gap: {xs: 1, sm: 2}, alignItems: 'center', textAlign: 'center'}}>
+                <Box sx={{display: 'flex', gap: {xs: 1.5, sm: 2}, alignItems: 'center', textAlign: 'center', overflow: 'hidden'}}>
                     {isBrowsingCompleted ? (
                         <Box sx={{width: '120px'}} />
                     ) : (
                         <>
-                            <Typography variant="body2">총남은: {versesCount}</Typography>
-                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold' }}>오늘남은: {remainingToday}개</Typography>}
-                            <Typography variant="body2">세션 완료: {sessionCompletedCount}</Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>총남은: {versesCount}</Typography>
+                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘: {remainingToday}</Typography>}
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>완료: {sessionCompletedCount}</Typography>
                         </>
                     )}
                 </Box>
