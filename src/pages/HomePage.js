@@ -84,7 +84,7 @@ const ReviewScreen = ({ settings, setters, verse, verses, isBrowsingCompleted, s
 };
 
 const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
-    <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1, textAlign: 'center' }}>
+    <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1.5, textAlign: 'center' }}>
         <ListItemIcon sx={{ minWidth: 'auto', color: 'primary.main', mb: 0.5 }}>{icon}</ListItemIcon>
         <Box><Typography variant="body2" sx={{ fontWeight: 'medium', lineHeight: 1.2 }}>{primary}</Typography><Typography variant="caption" color={secondaryColor || 'text.secondary'}>{secondary}</Typography></Box>
     </Grid>
@@ -120,7 +120,7 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     return (
         <Box sx={{textAlign: 'left'}}>
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
-                <Typography variant="body1" sx={{fontWeight: 'bold', mb: 1.5, textAlign: 'center' }}>현재 복습 설정</Typography>
+                <Typography variant="body1" sx={{fontWeight: 'bold', mb: 1, textAlign: 'center' }}>현재 복습 설정</Typography>
                 <Grid container spacing={1} justifyContent="center">{infoItems.map(item => item && <InfoItem key={item.primary} {...item} />)}</Grid>
             </Paper>
         </Box>
@@ -128,9 +128,10 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
 };
 
 const HomePage = () => {
-  const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus } = useContext(DataContext);
+  const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
   const { isLoaded: settingsLoaded, settings, setters } = useAppSettings();
   const { showSnackbar } = useSnackbar();
+  
   const { todaysGoal, completedToday } = useMemo(() => {
     if (!originalVerses || settings.mode !== 'turnBasedReview' || !reviewLogData || !turnScheduleData) { return { todaysGoal: 0, completedToday: 0 }; }
     const kstDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -162,13 +163,30 @@ const HomePage = () => {
   }, [settings, originalVerses, turnScheduleData, reviewLogData]);
 
   const dailyProgress = { todaysGoal, completedToday };
-  const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress);
+  
+  const handleReviewLogUpdate = () => {
+    loadData(); // This will re-fetch all data including the review log from local storage
+  };
+
+  const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress, handleReviewLogUpdate);
   const { isFocusMode, themeKey, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
   const { setIsFocusMode } = setters;
   const [favoriteVerse, setFavoriteVerse] = useState(null);
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
+  
+  const [completedAtSessionStart, setCompletedAtSessionStart] = useState(0);
+
+  useEffect(() => {
+    setCompletedAtSessionStart(completedToday);
+  }, [mode, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn, completedToday]);
+
+  const remainingToday = useMemo(() => {
+    if (mode !== 'turnBasedReview') return null;
+    const totalCompletedToday = completedAtSessionStart + sessionStats.sessionCompletedCount;
+    return Math.max(0, todaysGoal - totalCompletedToday);
+  }, [mode, todaysGoal, completedAtSessionStart, sessionStats.sessionCompletedCount]);
 
   const handleConfirmReset = () => {
     let resetType = '';
@@ -191,12 +209,6 @@ const HomePage = () => {
     setResetConfirm({ open: false, mode: null, turn: 0 });
   };
   
-  const remainingToday = useMemo(() => {
-    if (mode !== 'turnBasedReview') return null;
-    const totalCompletedToday = completedToday + sessionStats.sessionCompletedCount;
-    return Math.max(0, todaysGoal - totalCompletedToday);
-  }, [mode, todaysGoal, completedToday, sessionStats.sessionCompletedCount]);
-
   useEffect(() => {
     if (isTurnCompleted) {
         let turnToReset;
@@ -240,8 +252,8 @@ const HomePage = () => {
   return (
     <>
       <Box sx={{ height: 'calc(100vh - 57px)', display: 'flex', flexDirection: 'column' }}>
-        <Container maxWidth="sm" sx={{ py: 1.5, display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { display: 'none' }, '-ms-overflow-style': 'none', 'scrollbar-width': 'none' }}>
-          <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 4, display: 'flex', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '25vh', height: '100%', }}>
+        <Container maxWidth="sm" sx={{ pt: 1, pb: 1, display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { display: 'none' }, '-ms-overflow-style': 'none', 'scrollbar-width': 'none' }}>
+          <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 3, display: 'flex', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '22vh', height: '100%', }}>
             {favoriteVerse && (
               <Box sx={{width: '100%', display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden'}}>
                 <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', opacity: 0.9, mb: 1, flexShrink: 0 }}>{favoriteVerse.장절}</Typography>
@@ -250,8 +262,8 @@ const HomePage = () => {
               </Box>
             )}
           </Card>
-          <Box sx={{ p: '2px', borderRadius: 4, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 20px rgba(0,0,0,0.12)', mb: 1.5 }}>
-              <Paper sx={{ p: 1.5, borderRadius: '14px' }}>
+          <Box sx={{ p: '2px', borderRadius: 3, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 12px rgba(0,0,0,0.1)', mb: 1.5 }}>
+              <Paper sx={{ p: 1.5, borderRadius: '10px' }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>빠른 모드 선택</Typography>
                   <ToggleButtonGroup value={settings.mode} exclusive onChange={handleModeChange} aria-label="quick mode select" fullWidth size="small">
                       <ToggleButton value="turnBasedReview">차수별 복습</ToggleButton>
@@ -260,10 +272,10 @@ const HomePage = () => {
                   </ToggleButtonGroup>
               </Paper>
           </Box>
-          <Box sx={{ p: '2px', borderRadius: 4, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 20px rgba(0,0,0,0.12)'}}>
-              <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '14px' }}>
+          <Box sx={{ p: '2px', borderRadius: 3, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
+              <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '10px' }}>
                 <Box>
-                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
                     <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
                 </Box>
                 <Button variant="contained" size="large" startIcon={<PlayCircleFilledIcon />} onClick={() => setIsFocusMode(true)} disabled={verses.length === 0} sx={{ mt: 2, width: '100%', py: 1.2, color: 'white', backgroundImage: THEMES[themeKey], transition: 'all 0.3s' }}>복습 시작하기</Button>
