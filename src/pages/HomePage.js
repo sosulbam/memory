@@ -84,7 +84,7 @@ const ReviewScreen = ({ settings, setters, verse, verses, isBrowsingCompleted, s
 };
 
 const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
-    <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2, textAlign: 'center' }}>
+    <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1, textAlign: 'center' }}>
         <ListItemIcon sx={{ minWidth: 'auto', color: 'primary.main', mb: 0.5 }}>{icon}</ListItemIcon>
         <Box><Typography variant="body2" sx={{ fontWeight: 'medium', lineHeight: 1.2 }}>{primary}</Typography><Typography variant="caption" color={secondaryColor || 'text.secondary'}>{secondary}</Typography></Box>
     </Grid>
@@ -119,7 +119,7 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
 
     return (
         <Box sx={{textAlign: 'left'}}>
-            <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
                 <Typography variant="body1" sx={{fontWeight: 'bold', mb: 1.5, textAlign: 'center' }}>현재 복습 설정</Typography>
                 <Grid container spacing={1} justifyContent="center">{infoItems.map(item => item && <InfoItem key={item.primary} {...item} />)}</Grid>
             </Paper>
@@ -239,20 +239,20 @@ const HomePage = () => {
   
   return (
     <>
-      <Box sx={{ height: 'calc(98vh - 57px)', display: 'flex', flexDirection: 'column' }}>
-        <Container maxWidth="sm" sx={{ pt: 2, pb: 2, display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { display: 'none' }, '-ms-overflow-style': 'none', 'scrollbar-width': 'none' }}>
-          <Card sx={{ mb: 2, flexShrink: 0, borderRadius: 4, display: 'flex', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '25vh', height: '100%', }}>
+      <Box sx={{ height: 'calc(100vh - 57px)', display: 'flex', flexDirection: 'column' }}>
+        <Container maxWidth="sm" sx={{ py: 1.5, display: 'flex', flexDirection: 'column', flexGrow: 1, overflowY: 'auto', '&::-webkit-scrollbar': { display: 'none' }, '-ms-overflow-style': 'none', 'scrollbar-width': 'none' }}>
+          <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 4, display: 'flex', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '25vh', height: '100%', }}>
             {favoriteVerse && (
-              <Box sx={{width: '100%', display: 'flex', flexDirection: 'column', p: 3, overflow: 'hidden'}}>
-                <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', opacity: 0.9, mb: 2, flexShrink: 0 }}>{favoriteVerse.장절}</Typography>
-                <Box sx={{ overflowY: 'auto', flexGrow: 1}}><Typography sx={{ whiteSpace: 'pre-line', opacity: 0.95, fontSize: '1.25rem', lineHeight: 1.44, fontWeight: 'bold' }}>{favoriteVerse.본문}</Typography></Box>
+              <Box sx={{width: '100%', display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden'}}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', opacity: 0.9, mb: 1, flexShrink: 0 }}>{favoriteVerse.장절}</Typography>
+                <Box sx={{ overflowY: 'auto', flexGrow: 1}}><Typography sx={{ whiteSpace: 'pre-line', opacity: 0.95, fontSize: '1.1rem', lineHeight: 1.4, fontWeight: 'bold' }}>{favoriteVerse.본문}</Typography></Box>
                 <Typography variant="body2" sx={{ alignSelf: 'flex-end', opacity: 0.8, pt: 1, flexShrink: 0 }}>{favoriteVerse.제목}</Typography>
               </Box>
             )}
           </Card>
-          <Box sx={{ p: '2px', borderRadius: 4, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 20px rgba(0,0,0,0.12)', mb: 2 }}>
-              <Paper sx={{ p: 2, borderRadius: '14px' }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1.5 }}>빠른 모드 선택</Typography>
+          <Box sx={{ p: '2px', borderRadius: 4, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 20px rgba(0,0,0,0.12)', mb: 1.5 }}>
+              <Paper sx={{ p: 1.5, borderRadius: '14px' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>빠른 모드 선택</Typography>
                   <ToggleButtonGroup value={settings.mode} exclusive onChange={handleModeChange} aria-label="quick mode select" fullWidth size="small">
                       <ToggleButton value="turnBasedReview">차수별 복습</ToggleButton>
                       <ToggleButton value="turnBasedNew">차수별 뉴구절</ToggleButton>
@@ -261,12 +261,12 @@ const HomePage = () => {
               </Paper>
           </Box>
           <Box sx={{ p: '2px', borderRadius: 4, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 20px rgba(0,0,0,0.12)'}}>
-              <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '14px' }}>
+              <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '14px' }}>
                 <Box>
                     <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
                     <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
                 </Box>
-                <Button variant="contained" size="large" startIcon={<PlayCircleFilledIcon />} onClick={() => setIsFocusMode(true)} disabled={verses.length === 0} sx={{ mt: 3, width: '100%', py: 1.5, color: 'white', backgroundImage: THEMES[themeKey], transition: 'all 0.3s' }}>복습 시작하기</Button>
+                <Button variant="contained" size="large" startIcon={<PlayCircleFilledIcon />} onClick={() => setIsFocusMode(true)} disabled={verses.length === 0} sx={{ mt: 2, width: '100%', py: 1.2, color: 'white', backgroundImage: THEMES[themeKey], transition: 'all 0.3s' }}>복습 시작하기</Button>
               </Paper>
           </Box>
         </Container>

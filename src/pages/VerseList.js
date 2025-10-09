@@ -1,6 +1,5 @@
 // src/pages/VerseList.js
 import React, { useEffect, useState, useContext, useMemo } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import { Container, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, ToggleButton, ToggleButtonGroup, Button, Grid, CircularProgress, Collapse, TablePagination, Chip } from '@mui/material';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
@@ -129,7 +128,7 @@ function VerseList() {
   };
 
   const handleCardExpand = (verseId) => {
-    setExpandedCardId(prevId => (prevId === verseId ? null : prevId));
+    setExpandedCardId(prevId => (prevId === verseId ? null : verseId));
   };
 
   const handleFilterChange = (field, value) => {
@@ -215,22 +214,22 @@ function VerseList() {
             <Grid container spacing={2}>
               {filteredVerses.slice(pagination.page * pagination.rowsPerPage, (pagination.page + 1) * pagination.rowsPerPage).map(v => (
                 <Grid item xs={12} sm={6} md={4} key={v.id}>
-                    <Card sx={{
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        height: '100%',
-                        borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        border: '1px solid #eee',
-                        transition: 'box-shadow 0.3s ease-in-out',
-                        '&:hover': {
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                        }
-                    }}>
-                        <CardContent 
-                            sx={{flexGrow: 1, display: 'flex', flexDirection: 'column', cursor: 'pointer'}}
-                            onClick={() => handleCardExpand(v.id)}
-                        >
+                    <Card 
+                        onClick={() => handleCardExpand(v.id)}
+                        sx={{
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            height: '100%',
+                            borderRadius: 2,
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            border: '1px solid #eee',
+                            transition: 'box-shadow 0.3s ease-in-out',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                            }
+                        }}>
+                        <CardContent sx={{flexGrow: 1, display: 'flex', flexDirection: 'column'}}>
                             <Typography variant="h6" align="center">{v.제목 || "제목 없음"}</Typography>
                             <Typography color="text.secondary" align="left">{v.장절}</Typography>
                             <Typography variant="body1" sx={{ my: 1.5, whiteSpace: 'pre-line', flexGrow: 1 }}>{v.본문}</Typography>

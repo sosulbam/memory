@@ -44,7 +44,7 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
         <Box sx={{
             position: 'absolute', top: 0, left: 0, right: 0,
             backgroundColor: 'rgba(0,0,0,0.3)', color: 'white', zIndex: 1,
-            pb: showProgressBar ? 1 : 0
+            pb: 1
         }}>
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -80,23 +80,21 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
             
             {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
               <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
-                  <Box sx={{ flexGrow: 1 }} />
-                  {daysAgoText && <Typography variant="caption">{daysAgoText}</Typography>}
-                </Box>
+                <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
                 <LinearProgress variant="determinate" value={dailyProgressPercent} sx={{ height: 6, borderRadius: 3 }}/>
               </Box>
             )}
             {(mode === 'turnBasedNew' || mode === 'turnBasedRecent') && sessionGoal > 0 && !isBrowsingCompleted && (
                 <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Typography variant="caption">{`${sessionCompletedCount} / ${sessionGoal}`}</Typography>
-                    </Box>
+                    <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
                     <LinearProgress variant="determinate" value={sessionProgressPercent} sx={{ height: 6, borderRadius: 3 }} />
                 </Box>
+            )}
+
+            {daysAgoText && (
+              <Box sx={{ px: 2, textAlign: 'right', height: '20px', pt: 0.5 }}>
+                  <Typography variant="caption" component="div">{daysAgoText}</Typography>
+              </Box>
             )}
         </Box>
     );
@@ -187,7 +185,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
         borderRadius: 0, zIndex: 1300, border: 'none', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
         cursor: isBrowsingCompleted ? 'default' : 'text', userSelect: 'none',
-        background: currentTheme, color: 'white', padding: { xs: 2, sm: '32px 48px' },
+        background: currentTheme, color: 'white', padding: { xs: '32px 24px', sm: '32px 60px' },
         boxSizing: 'border-box',
       }}
       onClick={handleClick}

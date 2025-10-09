@@ -43,7 +43,7 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
         <Box sx={{
             position: 'absolute', top: 0, left: 0, right: 0,
             backgroundColor: 'rgba(0,0,0,0.3)', color: 'white', zIndex: 1,
-            pb: showProgressBar ? 1 : 0
+            pb: 1
         }}>
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -79,27 +79,26 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
             
             {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
               <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
-                  <Box sx={{ flexGrow: 1 }} />
-                  {daysAgoText && <Typography variant="caption">{daysAgoText}</Typography>}
-                </Box>
+                <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
                 <LinearProgress variant="determinate" value={dailyProgressPercent} sx={{ height: 6, borderRadius: 3 }}/>
               </Box>
             )}
             {(mode === 'turnBasedNew' || mode === 'turnBasedRecent') && sessionGoal > 0 && !isBrowsingCompleted && (
                 <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Typography variant="caption">{`${sessionCompletedCount} / ${sessionGoal}`}</Typography>
-                    </Box>
+                    <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
                     <LinearProgress variant="determinate" value={sessionProgressPercent} sx={{ height: 6, borderRadius: 3 }} />
                 </Box>
+            )}
+            
+            {daysAgoText && (
+              <Box sx={{ px: 2, textAlign: 'right', height: '20px', pt: 0.5 }}>
+                  <Typography variant="caption" component="div">{daysAgoText}</Typography>
+              </Box>
             )}
         </Box>
     );
 };
+
 const FocusModeFooter = ({ onFooterClick }) => (
     <Box 
         onClick={(e) => {
@@ -157,7 +156,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
   );
   
   const BackContent = ({ verse }) => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', p: isFocusMode ? {xs: '80px 32px 90px', sm: '80px 48px 90px'} : '20px' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', p: isFocusMode ? { xs: '80px 32px 90px', sm: '80px 60px 90px' } : '20px' }}>
         <Box sx={{ overflowY: 'auto', flexGrow: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography fontWeight="bold" sx={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: titleSizeMap[fontSize] || titleSizeMap.medium }}>
                 {verse?.제목}

@@ -208,13 +208,11 @@ function VerseManager() {
             return;
           }
 
-          // ID가 존재하고, 이미 있는 ID라면 건너뛰기
           if (verseData.id && existingVerseIds.has(verseData.id)) {
             skippedCount++;
             return;
           }
 
-          // ID가 없거나 새로운 ID인 경우 추가
           const newId = verseData.id || generateId();
           
           const newVerseEntry = {
@@ -224,10 +222,9 @@ function VerseManager() {
           };
 
           updatedVerses.push(newVerseEntry);
-          existingVerseIds.add(newId); // 새로 추가된 ID도 중복 체크 대상에 포함
+          existingVerseIds.add(newId);
           addedCount++;
           
-          // 태그 처리
           if (태그 && typeof 태그 === 'string') {
             updatedTags[newId] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
           }
@@ -245,7 +242,6 @@ function VerseManager() {
       } finally {
         setIsSaving(false);
         setSelectedFile(null);
-        // Reset file input
         const fileInput = document.querySelector('input[type="file"]');
         if(fileInput) fileInput.value = '';
       }
@@ -274,7 +270,7 @@ function VerseManager() {
   };
   
   const handleCardExpand = (verseId) => {
-    setExpandedCardId(prevId => (prevId === verseId ? null : prevId));
+    setExpandedCardId(prevId => (prevId === verseId ? null : verseId));
   };
 
   const filteredVerses = useMemo(() => {
@@ -391,8 +387,17 @@ function VerseManager() {
                 <Grid container spacing={2}>
                     {filteredVerses.slice(pagination.page * pagination.rowsPerPage, (pagination.page + 1) * pagination.rowsPerPage).map(v => (
                     <Grid item xs={12} sm={6} md={4} key={v.id}>
-                        <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%', borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                            <CardContent sx={{ flexGrow: 1, cursor: 'pointer' }} onClick={() => handleCardExpand(v.id)}>
+                        <Card 
+                            onClick={() => handleCardExpand(v.id)}
+                            sx={{ 
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                height: '100%', 
+                                borderRadius: 2, 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                cursor: 'pointer',
+                            }}>
+                            <CardContent sx={{ flexGrow: 1 }}>
                                 <Typography variant="h6" align="center">{v.제목 || "제목 없음"}</Typography>
                                 <Typography color="text.secondary" align="left">{v.장절}</Typography>
                                 <Typography variant="body1" sx={{ my: 1.5, whiteSpace: 'pre-line', flexGrow: 1 }}>{v.본문}</Typography>
@@ -401,9 +406,9 @@ function VerseManager() {
                             </CardContent>
                             <Collapse in={expandedCardId === v.id} timeout="auto" unmountOnExit>
                                 <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', gap: 1, borderTop: '1px solid #eee' }}>
-                                    <IconButton size="small" onClick={() => handleEdit(v)}><EditIcon fontSize="small" /></IconButton>
-                                    <IconButton size="small" color="secondary" onClick={() => openTagDialog(v)}><LabelIcon fontSize="small" /></IconButton>
-                                    <IconButton size="small" color="error" onClick={() => handleDelete(v.id)}><DeleteIcon fontSize="small" /></IconButton>
+                                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(v); }}><EditIcon fontSize="small" /></IconButton>
+                                    <IconButton size="small" color="secondary" onClick={(e) => { e.stopPropagation(); openTagDialog(v); }}><LabelIcon fontSize="small" /></IconButton>
+                                    <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}><DeleteIcon fontSize="small" /></IconButton>
                                 </Box>
                             </Collapse>
                         </Card>
