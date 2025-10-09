@@ -37,8 +37,6 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
         ? Math.round((sessionCompletedCount / sessionGoal) * 100)
         : 0;
 
-    const showProgressBar = mode.startsWith('turnBased') && !isBrowsingCompleted;
-
     return (
         <Box sx={{
             position: 'absolute', top: 0, left: 0, right: 0,
@@ -77,23 +75,23 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                 </Tooltip>
             </Box>
             
-            {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
-              <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
-                <LinearProgress variant="determinate" value={dailyProgressPercent} sx={{ height: 6, borderRadius: 3 }}/>
-              </Box>
-            )}
-            {(mode === 'turnBasedNew' || mode === 'turnBasedRecent') && sessionGoal > 0 && !isBrowsingCompleted && (
-                <Box sx={{ width: '100%', px: 2, pt: 0.5 }}>
-                    <Typography variant="caption">진행률 ({sessionProgressPercent}%)</Typography>
-                    <LinearProgress variant="determinate" value={sessionProgressPercent} sx={{ height: 6, borderRadius: 3 }} />
-                </Box>
-            )}
-            
             {daysAgoText && (
               <Box sx={{ px: 2, textAlign: 'right', height: '20px', pt: 0.5 }}>
                   <Typography variant="caption" component="div">{daysAgoText}</Typography>
               </Box>
+            )}
+
+            {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
+              <Box sx={{ width: '100%', px: 2, pt: 0.5, boxSizing: 'border-box' }}>
+                <Typography variant="caption" align="left">오늘 진행률 ({dailyProgressPercent}%)</Typography>
+                <LinearProgress variant="determinate" value={dailyProgressPercent} sx={{ height: 6, borderRadius: 3 }}/>
+              </Box>
+            )}
+            {(mode === 'turnBasedNew' || mode === 'turnBasedRecent') && sessionGoal > 0 && !isBrowsingCompleted && (
+                <Box sx={{ width: '100%', px: 2, pt: 0.5, boxSizing: 'border-box' }}>
+                    <Typography variant="caption" align="left">진행률 ({sessionProgressPercent}%)</Typography>
+                    <LinearProgress variant="determinate" value={sessionProgressPercent} sx={{ height: 6, borderRadius: 3 }} />
+                </Box>
             )}
         </Box>
     );
