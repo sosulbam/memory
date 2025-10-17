@@ -265,7 +265,27 @@ const HomePage = () => {
   if (isFocusMode) {
       return (
         <>
-            <ReviewScreen settings={settings} setters={setters} verse={verse} verses={verses} isBrowsingCompleted={isBrowsingCompleted} showAnswer={showAnswer} sessionStats={sessionStats} actions={actions} onStatusToggle={handleStatusToggle} onTagDialogOpen={() => setTagDialogOpen(true)} currentIndex={index} remainingToday={remainingToday} onHelpClick={() => setHelpOpen(true)} tagDialogOpen={tagDialogOpen} helpOpen={helpOpen} showSnackbar={showSnackbar} dailyProgress={dailyProgress} />
+            <ReviewScreen 
+                settings={settings} 
+                setters={setters} 
+                verse={verse} 
+                verses={verses} 
+                isBrowsingCompleted={isBrowsingCompleted} 
+                showAnswer={showAnswer} 
+                sessionStats={sessionStats} 
+                actions={actions} 
+                onStatusToggle={handleStatusToggle} 
+                onTagDialogOpen={() => setTagDialogOpen(true)} 
+                currentIndex={index} 
+                // remainingToday를 HomePage에서 계산한 최종 값으로 직접 전달합니다.
+                remainingToday={remainingToday} 
+                onHelpClick={() => setHelpOpen(true)} 
+                tagDialogOpen={tagDialogOpen} 
+                helpOpen={helpOpen} 
+                showSnackbar={showSnackbar} 
+                // dailyProgress 객체에 HomePage에서 계산한 최신 completedToday 값을 담아 전달합니다.
+                dailyProgress={{ todaysGoal, completedToday }} 
+            />
             <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
             <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </>
