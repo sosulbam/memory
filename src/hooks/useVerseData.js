@@ -1,4 +1,3 @@
-// src/hooks/useVerseData.js
 import { useState, useEffect, useCallback } from 'react';
 import { loadDataFromLocal, saveDataToLocal } from '../api/localStorageApi';
 import {
@@ -104,6 +103,49 @@ export const useVerseData = () => {
       const turnKeys = ['currentReviewTurn', 'maxCompletedTurn', 'currentReviewTurnForNew', 'maxCompletedTurnForNew', 'currentReviewTurnForRecent', 'maxCompletedTurnForRecent'];
       const boolKeys = ['복습여부', '뉴구절복습여부', '오답복습여부', '최근구절복습여부', '즐겨찾기복습여부'];
 
+      // --- 👇 여기가 수정된 부분입니다 ---
+      // 특정 복습 상태 초기화 시, 오늘 날짜의 복습 '로그'도 함께 초기화합니다.
+      const logResetTypes = {
+        all_turns: 'general',
+        all_turns_new: 'new',
+        all_turns_recent: 'recent',
+        category: 'general',
+        new: 'new',
+        wrong: 'wrong',
+        recent: 'recent',
+        favorite: 'favorite',
+      };
+
+      const logCategoryToReset = logResetTypes[type];
+      const isFullReset = type === 'all';
+
+      if (logCategoryToReset || isFullReset) {
+        const log = loadDataFromLocal(REVIEW_LOG_KEY) || {};
+        const kst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        if (log[kst] && typeof log[kst] === 'object') {
+          if (isFullReset) {
+            // '전체 초기화' 시 오늘 모든 로그를 0으로 설정
+            Object.keys(log[kst]).forEach(key => {
+              if (key !== 'total') {
+                log[kst][key] = 0;
+              }
+            });
+          } else if (logCategoryToReset) {
+            // 특정 타입 초기화 시 해당 카테고리 로그만 0으로 설정
+            log[kst][logCategoryToReset] = 0;
+          }
+
+          // total 값을 재계산합니다.
+          const totalCount = Object.keys(log[kst]).reduce((sum, key) => key !== 'total' ? sum + (log[kst][key] || 0) : sum, 0);
+          log[kst].total = totalCount;
+          
+          saveDataToLocal(REVIEW_LOG_KEY, log);
+          setReviewLogData(log); // 변경된 로그 상태를 즉시 반영
+        }
+      }
+      // --- 👆 수정 끝 ---
+
       const resetMap = {
         new: ['뉴구절복습여부'],
         wrong: ['오답복습여부'],
@@ -138,8 +180,9 @@ export const useVerseData = () => {
       }
 
       saveDataToLocal(REVIEW_STATUS_KEY, newStatusData);
+      setReviewStatusData(newStatusData); // 변경된 상태를 즉시 반영
       if (showSnackbar) showSnackbar('선택한 복습 기록이 초기화되었습니다.', 'success');
-      setReviewStatusData(newStatusData);
+      
     },
     [reviewStatusData, rawVerses]
   );
