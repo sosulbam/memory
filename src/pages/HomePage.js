@@ -133,6 +133,7 @@ const HomePage = () => {
 
   const [todaysGoal, setTodaysGoal] = useState(0);
   const [completedToday, setCompletedToday] = useState(0);
+  const [sessionTodaysGoal, setSessionTodaysGoal] = useState(0); // --- 👈 [수정 1] 세션 목표량 상태 추가 ---
 
   useEffect(() => {
     if (!originalVerses || settings.mode !== 'turnBasedReview' || !turnScheduleData) {
@@ -186,7 +187,7 @@ const HomePage = () => {
     const goal = targetByToday - totalReviewedCount;
     
     setTodaysGoal(goal > 0 ? goal : 0);
-  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData]);
+  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]);
   
   const dailyProgress = { todaysGoal, completedToday };
   
@@ -204,8 +205,9 @@ const HomePage = () => {
   
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    return Math.max(0, todaysGoal - sessionStats.sessionCompletedCount);
-  }, [mode, todaysGoal, sessionStats.sessionCompletedCount]);
+    // --- 👈 [수정 2] 계산식에서 sessionTodaysGoal 사용 ---
+    return Math.max(0, sessionTodaysGoal - sessionStats.sessionCompletedCount);
+  }, [mode, sessionTodaysGoal, sessionStats.sessionCompletedCount]);
 
   const handleConfirmReset = () => {
     let resetType = '';
@@ -315,7 +317,20 @@ const HomePage = () => {
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
                     <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
                 </Box>
-                <Button variant="contained" size="large" startIcon={<PlayCircleFilledIcon />} onClick={() => setIsFocusMode(true)} disabled={verses.length === 0} sx={{ mt: 2, width: '100%', py: 1.2, color: 'white', backgroundImage: THEMES[themeKey], transition: 'all 0.3s' }}>복습 시작하기</Button>
+                <Button 
+                    variant="contained" 
+                    size="large" 
+                    startIcon={<PlayCircleFilledIcon />} 
+                    // --- 👈 [수정 3] onClick 핸들러 수정 ---
+                    onClick={() => {
+                        setSessionTodaysGoal(todaysGoal);
+                        setIsFocusMode(true);
+                    }} 
+                    disabled={verses.length === 0} 
+                    sx={{ mt: 2, width: '100%', py: 1.2, color: 'white', backgroundImage: THEMES[themeKey], transition: 'all 0.3s' }}
+                >
+                    복습 시작하기
+                </Button>
               </Paper>
           </Box>
         </Container>
