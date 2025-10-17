@@ -1,4 +1,3 @@
-// src/pages/HomePage.js
 import React, { useMemo, useState, useEffect, useContext } from 'react';
 import { DataContext } from '../contexts/DataContext';
 import { useAppSettings } from '../hooks/useAppSettings';
@@ -132,13 +131,11 @@ const HomePage = () => {
   const { isLoaded: settingsLoaded, settings, setters } = useAppSettings();
   const { showSnackbar } = useSnackbar();
 
-  // --- 👇 여기가 수정된 부분입니다 (1/3) ---
   const [todaysGoal, setTodaysGoal] = useState(0);
   const [completedToday, setCompletedToday] = useState(0);
 
   useEffect(() => {
-    // 세션이 바뀔 때 (모드, 차수, 카테고리 등) 오늘의 목표량을 한 번만 계산하여 state에 저장합니다.
-    if (!originalVerses || settings.mode !== 'turnBasedReview' || !reviewLogData || !turnScheduleData) {
+    if (!originalVerses || settings.mode !== 'turnBasedReview' || !turnScheduleData) {
       setTodaysGoal(0);
       setCompletedToday(0);
       return;
@@ -155,39 +152,49 @@ const HomePage = () => {
     }
     const { selectedCategories, selectedSubcategories } = settings;
     const categoryFilter = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
-    const relevantVerses = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && categoryFilter(v));
-    const totalInScope = relevantVerses.length;
+    
+    // 이 모드/카테고리에 해당하는 전체 구절 범위를 먼저 정의합니다.
+    const versesInScope = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && categoryFilter(v));
+    const totalInScope = versesInScope.length;
+    
     if (totalInScope === 0) {
       setTodaysGoal(0);
       return;
     }
-    const totalReviewedCount = relevantVerses.filter(v => (v.maxCompletedTurn || 0) >= settings.targetTurn).length;
+
+    // 전체 범위 내에서 현재 목표 차수를 완료한 구절 수를 계산합니다.
+    const totalReviewedCount = versesInScope.filter(v => (v.maxCompletedTurn || 0) >= settings.targetTurn).length;
+    
     const startDate = new Date(schedule.startDate);
     const endDate = new Date(schedule.endDate);
     const today = new Date();
     [startDate, endDate, today].forEach(d => d.setHours(0, 0, 0, 0));
+    
     if (today < startDate || today > endDate) {
       setTodaysGoal(0);
       return;
     }
+    
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const elapsedDays = Math.round((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
     if (totalDays <= 0) {
       setTodaysGoal(0);
       return;
     }
+    
     const recommendedPerDay = totalInScope / totalDays;
     const targetByToday = Math.floor(elapsedDays * recommendedPerDay);
-    const remainingForTurn = targetByToday - totalReviewedCount;
-    const goal = remainingForTurn;
+
+    // 목표량은 '오늘까지 했어야 할 누적 목표'에서 '지금까지 완료한 누적량'을 뺀 값입니다.
+    const goal = targetByToday - totalReviewedCount;
     
     setTodaysGoal(goal > 0 ? goal : 0);
-  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]);
+  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]); // reviewLogData는 completedToday를 계산하기 위해 필요합니다.
   
   const dailyProgress = { todaysGoal, completedToday };
   
   const handleReviewLogUpdate = () => {
-    loadData(); // This will re-fetch all data including the review log from local storage
+    loadData();
   };
 
   const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress, handleReviewLogUpdate);
@@ -198,13 +205,9 @@ const HomePage = () => {
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
   
-  // --- 👇 여기가 수정된 부분입니다 (2/3) ---
-  // completedAtSessionStart state는 더 이상 필요 없으므로 삭제합니다.
-
-  // --- 👇 여기가 수정된 부분입니다 (3/3) ---
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    // 세션 시작 시점에 계산된 고정된 목표(todaysGoal)에서 '이번 세션에서' 완료한 개수만 뺍니다.
+    // 세션 시작 시점의 목표량(todaysGoal)에서 '이번 세션에서' 완료한 개수만 뺍니다.
     return Math.max(0, todaysGoal - sessionStats.sessionCompletedCount);
   }, [mode, todaysGoal, sessionStats.sessionCompletedCount]);
 
