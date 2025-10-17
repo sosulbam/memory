@@ -202,28 +202,41 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     const now = new Date();
     const todayStr = `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`;
     const updates = { 복습날짜: todayStr, 미암송여부: false };
+    
+    // --- 👇 [수정 2] 차수별 복습이 카테고리별 복습에 영향 주지 않도록 수정 ---
     switch (mode) {
-      case 'category': updates.복습여부 = true; break;
-      case 'new': updates.뉴구절복습여부 = true; updates.복습여부 = true; break;
-      case 'wrong': updates.오답복습여부 = true; updates.복습여부 = true; break;
-      case 'recent': updates.최근구절복습여부 = true; updates.복습여부 = true; break;
-      case 'favorite': updates.즐겨찾기복습여부 = true; updates.복습여부 = true; break;
+      case 'category': 
+        updates.복습여부 = true; 
+        break;
+      case 'new': 
+        updates.뉴구절복습여부 = true; 
+        updates.복습여부 = true; 
+        break;
+      case 'wrong': 
+        updates.오답복습여부 = true; 
+        updates.복습여부 = true; 
+        break;
+      case 'recent': 
+        updates.최근구절복습여부 = true; 
+        updates.복습여부 = true; 
+        break;
+      case 'favorite': 
+        updates.즐겨찾기복습여부 = true; 
+        updates.복습여부 = true; 
+        break;
       case 'turnBasedReview':
         if ((verseToComplete.maxCompletedTurn || 0) < targetTurn) updates.maxCompletedTurn = targetTurn;
         updates.currentReviewTurn = targetTurn + 1;
-        updates.복습여부 = true;
         break;
       case 'turnBasedNew':
         if ((verseToComplete.maxCompletedTurnForNew || 0) < targetTurnForNew) updates.maxCompletedTurnForNew = targetTurnForNew;
         updates.currentReviewTurnForNew = targetTurnForNew + 1;
         updates.뉴구절복습여부 = true;
-        updates.복습여부 = true;
         break;
       case 'turnBasedRecent':
         if ((verseToComplete.maxCompletedTurnForRecent || 0) < targetTurnForRecent) updates.maxCompletedTurnForRecent = targetTurnForRecent;
         updates.currentReviewTurnForRecent = targetTurnForRecent + 1;
         updates.최근구절복습여부 = true;
-        updates.복습여부 = true;
         break;
       default: break;
     }
@@ -243,6 +256,9 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     }
 
     setSessionCompleted(prev => [...prev, { ...verseToComplete, ...updates }]);
+    
+    // --- 👇 [수정 1] 구절 건너뛰기 방지를 위해 ignore flag 설정 ---
+    ignoreNextFilterRef.current = true;
     updateVerseStatus(verseToComplete.id, updates);
 
     const logCategoryMap = {

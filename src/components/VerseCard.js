@@ -28,8 +28,11 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
     const { mode } = settings;
     const { sessionCompletedCount } = sessionStats;
 
-    const dailyProgressPercent = dailyProgress && dailyProgress.todaysGoal > 0
-        ? Math.round(((dailyProgress.completedToday + sessionCompletedCount) / dailyProgress.todaysGoal) * 100)
+    // --- 👇 [수정 3] 진행률 계산 로직 변경 ---
+    const totalDailyGoal = (dailyProgress?.todaysGoal || 0) + (dailyProgress?.completedToday || 0);
+    const completedForToday = (dailyProgress?.completedToday || 0) + sessionCompletedCount;
+    const dailyProgressPercent = totalDailyGoal > 0
+        ? Math.round((completedForToday / totalDailyGoal) * 100)
         : 0;
     
     const sessionGoal = versesCount + sessionCompletedCount;
@@ -58,7 +61,6 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                         <>
                             <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>총남은: {versesCount}</Typography>
                             {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘남은: {remainingToday}</Typography>}
-                            {/* '세션 완료' 대신 '오늘 총 완료'를 표시합니다. */}
                             <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>오늘완료: {dailyProgress.completedToday + sessionStats.sessionCompletedCount}</Typography>
                         </>
                     )}
@@ -82,7 +84,7 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
               </Box>
             )}
 
-            {mode === 'turnBasedReview' && dailyProgress && dailyProgress.todaysGoal > 0 && !isBrowsingCompleted && (
+            {mode === 'turnBasedReview' && dailyProgress && totalDailyGoal > 0 && !isBrowsingCompleted && (
               <Box sx={{ width: '100%', px: 2, pt: 0.5, boxSizing: 'border-box' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
                   <Typography variant="caption">오늘 진행률 ({dailyProgressPercent}%)</Typography>
