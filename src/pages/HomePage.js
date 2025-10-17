@@ -184,11 +184,12 @@ const HomePage = () => {
     setCompletedAtSessionStart(completedToday);
   }, [mode, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn]);
 
-  const remainingToday = useMemo(() => {
+ const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    const totalCompletedToday = completedAtSessionStart + sessionStats.sessionCompletedCount;
-    return Math.max(0, todaysGoal - totalCompletedToday);
-  }, [mode, todaysGoal, completedAtSessionStart, sessionStats.sessionCompletedCount]);
+    // 이제 todaysGoal은 '세션 시작 전 오늘 해야 할 총량'을 의미합니다.
+    // 여기서 이번 '세션'에서 완료한 개수만 빼주면 됩니다.
+    return Math.max(0, todaysGoal - sessionStats.sessionCompletedCount);
+  }, [mode, todaysGoal, sessionStats.sessionCompletedCount]);
 
   const handleConfirmReset = () => {
     let resetType = '';
