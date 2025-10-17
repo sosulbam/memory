@@ -153,12 +153,14 @@ const HomePage = () => {
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const elapsedDays = Math.round((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
     if (totalDays <= 0) return { todaysGoal: 0, completedToday: completedTodayCount };
-    const recommendedPerDay = totalInScope / totalDays;
+   const recommendedPerDay = totalInScope / totalDays;
     const targetByToday = Math.floor(elapsedDays * recommendedPerDay);
-    const targetByYesterday = Math.floor((elapsedDays - 1) * recommendedPerDay);
-    const dailyGoal = targetByToday - targetByYesterday;
+    // 'targetByYesterday'와 'dailyGoal' 변수는 더 이상 필요 없으므로 삭제합니다.
+    
+    // '오늘까지 했어야 할 누적 목표량'에서 '실제로 완료한 누적량'을 직접 뺍니다.
     const remainingForTurn = targetByToday - totalReviewedCount;
-    const goal = Math.max(dailyGoal, remainingForTurn);
+    const goal = remainingForTurn; // 목표를 '누적 따라잡기' 기준으로 단일화합니다.
+
     return { todaysGoal: goal > 0 ? goal : 0, completedToday: completedTodayCount };
   }, [settings, originalVerses, turnScheduleData, reviewLogData]);
 
