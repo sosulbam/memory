@@ -58,8 +58,9 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                     ) : (
                         <>
                             <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>총남은: {versesCount}</Typography>
-                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘: {remainingToday}</Typography>}
-                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>완료: {sessionCompletedCount}</Typography>
+                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘남은: {remainingToday}</Typography>}
+                            {/* '세션 완료' 대신 '오늘 총 완료'를 표시합니다. */}
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>오늘완료: {dailyProgress.completedToday + sessionStats.sessionCompletedCount}</Typography>
                         </>
                     )}
                 </Box>

@@ -131,39 +131,59 @@ const HomePage = () => {
   const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
   const { isLoaded: settingsLoaded, settings, setters } = useAppSettings();
   const { showSnackbar } = useSnackbar();
-  
-  const { todaysGoal, completedToday } = useMemo(() => {
-    if (!originalVerses || settings.mode !== 'turnBasedReview' || !reviewLogData || !turnScheduleData) { return { todaysGoal: 0, completedToday: 0 }; }
+
+  // --- 👇 여기가 수정된 부분입니다 (1/3) ---
+  const [todaysGoal, setTodaysGoal] = useState(0);
+  const [completedToday, setCompletedToday] = useState(0);
+
+  useEffect(() => {
+    // 세션이 바뀔 때 (모드, 차수, 카테고리 등) 오늘의 목표량을 한 번만 계산하여 state에 저장합니다.
+    if (!originalVerses || settings.mode !== 'turnBasedReview' || !reviewLogData || !turnScheduleData) {
+      setTodaysGoal(0);
+      setCompletedToday(0);
+      return;
+    }
     const kstDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
     const todayLog = reviewLogData[kstDate];
     const completedTodayCount = (todayLog && typeof todayLog === 'object') ? (todayLog.general || 0) : 0;
+    setCompletedToday(completedTodayCount);
+
     const schedule = turnScheduleData[settings.targetTurn];
-    if (!schedule || !schedule.startDate || !schedule.endDate) return { todaysGoal: 0, completedToday: completedTodayCount };
+    if (!schedule || !schedule.startDate || !schedule.endDate) {
+      setTodaysGoal(0);
+      return;
+    }
     const { selectedCategories, selectedSubcategories } = settings;
     const categoryFilter = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
     const relevantVerses = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && categoryFilter(v));
     const totalInScope = relevantVerses.length;
-    if (totalInScope === 0) return { todaysGoal: 0, completedToday: completedTodayCount };
+    if (totalInScope === 0) {
+      setTodaysGoal(0);
+      return;
+    }
     const totalReviewedCount = relevantVerses.filter(v => (v.maxCompletedTurn || 0) >= settings.targetTurn).length;
     const startDate = new Date(schedule.startDate);
     const endDate = new Date(schedule.endDate);
     const today = new Date();
     [startDate, endDate, today].forEach(d => d.setHours(0, 0, 0, 0));
-    if (today < startDate || today > endDate) return { todaysGoal: 0, completedToday: completedTodayCount };
+    if (today < startDate || today > endDate) {
+      setTodaysGoal(0);
+      return;
+    }
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const elapsedDays = Math.round((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    if (totalDays <= 0) return { todaysGoal: 0, completedToday: completedTodayCount };
-   const recommendedPerDay = totalInScope / totalDays;
+    if (totalDays <= 0) {
+      setTodaysGoal(0);
+      return;
+    }
+    const recommendedPerDay = totalInScope / totalDays;
     const targetByToday = Math.floor(elapsedDays * recommendedPerDay);
-    // 'targetByYesterday'와 'dailyGoal' 변수는 더 이상 필요 없으므로 삭제합니다.
-    
-    // '오늘까지 했어야 할 누적 목표량'에서 '실제로 완료한 누적량'을 직접 뺍니다.
     const remainingForTurn = targetByToday - totalReviewedCount;
-    const goal = remainingForTurn; // 목표를 '누적 따라잡기' 기준으로 단일화합니다.
-
-    return { todaysGoal: goal > 0 ? goal : 0, completedToday: completedTodayCount };
-  }, [settings, originalVerses, turnScheduleData, reviewLogData]);
-
+    const goal = remainingForTurn;
+    
+    setTodaysGoal(goal > 0 ? goal : 0);
+  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]);
+  
   const dailyProgress = { todaysGoal, completedToday };
   
   const handleReviewLogUpdate = () => {
@@ -178,16 +198,13 @@ const HomePage = () => {
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
   
-  const [completedAtSessionStart, setCompletedAtSessionStart] = useState(0);
+  // --- 👇 여기가 수정된 부분입니다 (2/3) ---
+  // completedAtSessionStart state는 더 이상 필요 없으므로 삭제합니다.
 
-   useEffect(() => {
-    setCompletedAtSessionStart(completedToday);
-  }, [mode, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn]);
-
- const remainingToday = useMemo(() => {
+  // --- 👇 여기가 수정된 부분입니다 (3/3) ---
+  const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    // 이제 todaysGoal은 '세션 시작 전 오늘 해야 할 총량'을 의미합니다.
-    // 여기서 이번 '세션'에서 완료한 개수만 빼주면 됩니다.
+    // 세션 시작 시점에 계산된 고정된 목표(todaysGoal)에서 '이번 세션에서' 완료한 개수만 뺍니다.
     return Math.max(0, todaysGoal - sessionStats.sessionCompletedCount);
   }, [mode, todaysGoal, sessionStats.sessionCompletedCount]);
 
