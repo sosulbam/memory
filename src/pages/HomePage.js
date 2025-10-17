@@ -133,7 +133,7 @@ const HomePage = () => {
 
   const [todaysGoal, setTodaysGoal] = useState(0);
   const [completedToday, setCompletedToday] = useState(0);
-  const [sessionTodaysGoal, setSessionTodaysGoal] = useState(0); // --- 👈 [수정 1] 세션 목표량 상태 추가 ---
+  const [sessionTodaysGoal, setSessionTodaysGoal] = useState(0);
 
   useEffect(() => {
     if (!originalVerses || settings.mode !== 'turnBasedReview' || !turnScheduleData) {
@@ -205,9 +205,15 @@ const HomePage = () => {
   
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    // --- 👈 [수정 2] 계산식에서 sessionTodaysGoal 사용 ---
-    return Math.max(0, sessionTodaysGoal - sessionStats.sessionCompletedCount);
-  }, [mode, sessionTodaysGoal, sessionStats.sessionCompletedCount]);
+
+    // --- 👇 여기가 수정된 부분입니다 ---
+    if (isFocusMode) {
+      // 집중 모드일 때는 세션 시작 시점의 목표량을 기준으로 계산
+      return Math.max(0, sessionTodaysGoal - sessionStats.sessionCompletedCount);
+    }
+    // 홈 화면일 때는 실시간으로 계산된 전체 목표량을 표시
+    return Math.max(0, todaysGoal);
+  }, [mode, isFocusMode, todaysGoal, sessionTodaysGoal, sessionStats.sessionCompletedCount]);
 
   const handleConfirmReset = () => {
     let resetType = '';
@@ -321,7 +327,6 @@ const HomePage = () => {
                     variant="contained" 
                     size="large" 
                     startIcon={<PlayCircleFilledIcon />} 
-                    // --- 👈 [수정 3] onClick 핸들러 수정 ---
                     onClick={() => {
                         setSessionTodaysGoal(todaysGoal);
                         setIsFocusMode(true);
