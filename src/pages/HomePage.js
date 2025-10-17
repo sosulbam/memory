@@ -186,8 +186,6 @@ const HomePage = () => {
     const goal = targetByToday - totalReviewedCount;
     
     setTodaysGoal(goal > 0 ? goal : 0);
-    // --- 👇 여기가 수정된 부분입니다 ---
-    // 의존성 배열에서 reviewLogData를 제거하여, 복습 진행 중 목표량이 재계산되는 것을 방지합니다.
   }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData]);
   
   const dailyProgress = { todaysGoal, completedToday };
