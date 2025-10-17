@@ -153,7 +153,6 @@ const HomePage = () => {
     const { selectedCategories, selectedSubcategories } = settings;
     const categoryFilter = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
     
-    // 이 모드/카테고리에 해당하는 전체 구절 범위를 먼저 정의합니다.
     const versesInScope = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && categoryFilter(v));
     const totalInScope = versesInScope.length;
     
@@ -162,7 +161,6 @@ const HomePage = () => {
       return;
     }
 
-    // 전체 범위 내에서 현재 목표 차수를 완료한 구절 수를 계산합니다.
     const totalReviewedCount = versesInScope.filter(v => (v.maxCompletedTurn || 0) >= settings.targetTurn).length;
     
     const startDate = new Date(schedule.startDate);
@@ -185,11 +183,12 @@ const HomePage = () => {
     const recommendedPerDay = totalInScope / totalDays;
     const targetByToday = Math.floor(elapsedDays * recommendedPerDay);
 
-    // 목표량은 '오늘까지 했어야 할 누적 목표'에서 '지금까지 완료한 누적량'을 뺀 값입니다.
     const goal = targetByToday - totalReviewedCount;
     
     setTodaysGoal(goal > 0 ? goal : 0);
-  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]); // reviewLogData는 completedToday를 계산하기 위해 필요합니다.
+    // --- 👇 여기가 수정된 부분입니다 ---
+    // 의존성 배열에서 reviewLogData를 제거하여, 복습 진행 중 목표량이 재계산되는 것을 방지합니다.
+  }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData]);
   
   const dailyProgress = { todaysGoal, completedToday };
   
@@ -207,7 +206,6 @@ const HomePage = () => {
   
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
-    // 세션 시작 시점의 목표량(todaysGoal)에서 '이번 세션에서' 완료한 개수만 뺍니다.
     return Math.max(0, todaysGoal - sessionStats.sessionCompletedCount);
   }, [mode, todaysGoal, sessionStats.sessionCompletedCount]);
 
@@ -277,13 +275,11 @@ const HomePage = () => {
                 onStatusToggle={handleStatusToggle} 
                 onTagDialogOpen={() => setTagDialogOpen(true)} 
                 currentIndex={index} 
-                // remainingToday를 HomePage에서 계산한 최종 값으로 직접 전달합니다.
                 remainingToday={remainingToday} 
                 onHelpClick={() => setHelpOpen(true)} 
                 tagDialogOpen={tagDialogOpen} 
                 helpOpen={helpOpen} 
                 showSnackbar={showSnackbar} 
-                // dailyProgress 객체에 HomePage에서 계산한 최신 completedToday 값을 담아 전달합니다.
                 dailyProgress={{ todaysGoal, completedToday }} 
             />
             <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
