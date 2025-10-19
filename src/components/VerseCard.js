@@ -28,17 +28,28 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
     const { mode } = settings;
     const { sessionCompletedCount } = sessionStats;
 
-    // --- 👇 [수정 3] 진행률 계산 로직 변경 ---
-    const totalDailyGoal = (dailyProgress?.todaysGoal || 0) + (dailyProgress?.completedToday || 0);
-    const completedForToday = (dailyProgress?.completedToday || 0) + sessionCompletedCount;
+    // --- 👇 [수정] 사용자가 제안한 로직으로 프로그레스 바 계산 ---
+    // 1. '오늘 남은 구절 수' (remainingToday)는 이미 정확함 (e.g., 8)
+    // 2. '오늘 완료한 구절 수' (currentCompleted) 계산
+    
+    // (A) 세션 시작 전 완료량 (e.g., 2)
+    const completedBeforeSession = dailyProgress?.completedToday || 0;
+    // (B) 이번 세션 목표량 (e.g., 8) (세션 시작 시점의 '남은 량'으로 고정)
+    const goalForThisSession = (remainingToday !== null ? remainingToday : 0) + sessionCompletedCount;
+    // (C) 오늘의 전체 목표량 (A + B) (e.g., 2 + 8 = 10)
+    const totalDailyGoal = goalForThisSession + completedBeforeSession;
+    // (D) 현재 시점 완료량 (C - '현재 남은 량') (e.g., 10 - 8 = 2)
+    const currentCompleted = totalDailyGoal - (remainingToday !== null ? remainingToday : 0);
+
     const dailyProgressPercent = totalDailyGoal > 0
-        ? Math.round((completedForToday / totalDailyGoal) * 100)
+        ? Math.round((currentCompleted / totalDailyGoal) * 100)
         : 0;
     
     const sessionGoal = versesCount + sessionCompletedCount;
     const sessionProgressPercent = sessionGoal > 0
         ? Math.round((sessionCompletedCount / sessionGoal) * 100)
         : 0;
+    // --- 👆 수정 완료 ---
 
     return (
         <Box sx={{
@@ -61,7 +72,8 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                         <>
                             <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>총남은: {versesCount}</Typography>
                             {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘남은: {remainingToday}</Typography>}
-                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>오늘완료: {dailyProgress.completedToday + sessionStats.sessionCompletedCount}</Typography>
+                            {/* '오늘완료' 표시는 'currentCompleted' 값을 사용합니다. */}
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>오늘완료: {currentCompleted}</Typography>
                         </>
                     )}
                 </Box>
