@@ -203,7 +203,6 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     const todayStr = `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`;
     const updates = { 복습날짜: todayStr, 미암송여부: false };
     
-    // --- 👇 [수정 2] 차수별 복습이 카테고리별 복습에 영향 주지 않도록 수정 ---
     switch (mode) {
       case 'category': 
         updates.복습여부 = true; 
@@ -241,23 +240,35 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       default: break;
     }
 
+    // --- 👇 [수정] 스낵바 알림 로직을 프로그레스 바와 동일하게 수정 ---
     if (showSnackbar && mode.startsWith('turnBased') && dailyProgress) {
         const { todaysGoal, completedToday } = dailyProgress;
-        if (todaysGoal > 0) {
-            const completedBeforeThisVerse = completedToday + sessionCompleted.length;
-            const progressBefore = (completedBeforeThisVerse / todaysGoal) * 100;
-            const completedAfterThisVerse = completedBeforeThisVerse + 1;
-            const progressAfter = (completedAfterThisVerse / todaysGoal) * 100;
+        
+        // 1. 오늘의 '전체' 목표량 계산 (분모)
+        // (세션 시작 시점의 남은 목표량 + 세션 시작 전 완료량)
+        const totalDailyGoal = (todaysGoal || 0) + (completedToday || 0);
 
+        if (totalDailyGoal > 0) {
+            // 2. '이번 구절 제외' 완료량 (직전 완료량)
+            // (세션 시작 전 완료량 + 이번 세션에서 직전까지 완료한 량)
+            const completedBeforeThisVerse = (completedToday || 0) + sessionCompleted.length;
+            // 3. '이번 구절 포함' 완료량 (현재 완료량)
+            const completedAfterThisVerse = completedBeforeThisVerse + 1;
+
+            // 4. 직전 진행률과 현재 진행률 계산
+            const progressBefore = (completedBeforeThisVerse / totalDailyGoal) * 100;
+            const progressAfter = (completedAfterThisVerse / totalDailyGoal) * 100;
+
+            // 5. 경계선(50%, 75%, 100%)을 넘었는지 확인
             if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); } 
             else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); } 
             else if (progressBefore < 50 && progressAfter >= 50) { showSnackbar('오늘 목표의 절반을 달성하셨습니다! 💪', 'info'); }
         }
     }
+    // --- 👆 수정 완료 ---
 
     setSessionCompleted(prev => [...prev, { ...verseToComplete, ...updates }]);
     
-    // --- 👇 [수정 1] 구절 건너뛰기 방지를 위해 ignore flag 설정 ---
     ignoreNextFilterRef.current = true;
     updateVerseStatus(verseToComplete.id, updates);
 
