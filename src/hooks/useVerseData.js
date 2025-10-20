@@ -104,17 +104,20 @@ export const useVerseData = () => {
       const boolKeys = ['복습여부', '뉴구절복습여부', '오답복습여부', '최근구절복습여부', '즐겨찾기복습여부'];
 
       // --- 👇 여기가 수정된 부분입니다 ---
-      // 특정 복습 상태 초기화 시, 오늘 날짜의 복습 '로그'도 함께 초기화합니다.
+      // 'all_turns...' 관련 타입들을 제거하여, 해당 타입으로 초기화 시 통계 로그가 삭제되지 않도록 수정합니다.
+      // (예: '차수별 복습' 완료 팝업)
+      // 반면, 'new', 'recent' 등(수동 초기화 버튼)은 로그를 초기화하는 기존 로직을 유지합니다.
       const logResetTypes = {
-        all_turns: 'general',
-        all_turns_new: 'new',
-        all_turns_recent: 'recent',
+        // all_turns: 'general', // 삭제
+        // all_turns_new: 'new', // 삭제
+        // all_turns_recent: 'recent', // 삭제
         category: 'general',
         new: 'new',
         wrong: 'wrong',
         recent: 'recent',
         favorite: 'favorite',
       };
+      // --- 👆 수정 끝 ---
 
       const logCategoryToReset = logResetTypes[type];
       const isFullReset = type === 'all';
@@ -144,8 +147,8 @@ export const useVerseData = () => {
           setReviewLogData(log); // 변경된 로그 상태를 즉시 반영
         }
       }
-      // --- 👆 수정 끝 ---
 
+      // 아래의 '복습 상태' 초기화 로직은 통계와 관계없이 항상 실행됩니다.
       const resetMap = {
         new: ['뉴구절복습여부'],
         wrong: ['오답복습여부'],
