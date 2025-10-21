@@ -9,19 +9,19 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   const [versesToReview, setVersesToReview] = useState([]);
   const [completedInMode, setCompletedInMode] = useState([]);
   const [sessionCompleted, setSessionCompleted] = useState([]);
-  
+
   const [index, setIndex] = useState(0);
   const [browseIndex, setBrowseIndex] = useState(0);
-  
+
   const [showAnswer, setShowAnswer] = useState(false);
   const [isBrowsingCompleted, setIsBrowsingCompleted] = useState(false);
 
   const [todayCount, setTodayCount] = useState(0);
   const [totalTargetCount, setTotalTargetCount] = useState(0);
   const [reviewedCount, setReviewedCount] = useState(0);
-  
+
   const [isTurnCompleted, setIsTurnCompleted] = useState(false);
-  
+
   const ignoreNextFilterRef = useRef(false);
   const todayStr = `${new Date().getFullYear()}. ${new Date().getMonth() + 1}. ${new Date().getDate()}`;
 
@@ -32,7 +32,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   useEffect(() => {
     setSessionCompleted([]);
     setIndex(0);
-    setIsTurnCompleted(false); 
+    setIsTurnCompleted(false);
   }, [mode, selectedCategories, selectedSubcategories, order, targetTurn, targetTurnForNew, targetTurnForRecent]);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       pending: v => false,
     };
 
-    const categoryFilter = v => 
+    const categoryFilter = v =>
         (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) &&
         (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
 
@@ -79,10 +79,10 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     };
 
     const base = mode === 'pending' ? originalVerses.filter(baseFilter[mode]) : activeVerses.filter(baseFilter[mode] || (() => true));
-    
+
     let remainingList = base.filter(v => !completionCheck[mode](v));
     const completedList = base.filter(v => completionCheck[mode](v));
-    
+
     if (mode.startsWith('turnBased') && remainingList.length === 0 && base.length > 0) {
         setIsTurnCompleted(true);
     }
@@ -135,11 +135,11 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     setTotalTargetCount(base.length);
     setReviewedCount(completedList.length);
     setTodayCount(base.filter(v => completionCheck[mode](v) && v.복습날짜 === todayStr).length);
-    
+
     setShowAnswer(false);
     setIsBrowsingCompleted(false);
     setBrowseIndex(0);
-    
+
   }, [mode, selectedCategories, selectedSubcategories, order, originalVerses, targetTurn, targetTurnForNew, targetTurnForRecent, todayStr]);
 
   const browsableCompletedList = useMemo(() => {
@@ -156,7 +156,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   }, [completedInMode, sessionCompleted, completedSortOrder]);
 
   const toggleAnswer = useCallback(() => setShowAnswer(prev => !prev), []);
-  
+
   const updateVerseInPlace = useCallback((updates) => {
     if (isBrowsingCompleted || !versesToReview[index]) return;
     ignoreNextFilterRef.current = true;
@@ -179,7 +179,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     setBrowseIndex(prev => (prev - 1 + browsableCompletedList.length) % browsableCompletedList.length);
     setShowAnswer(false);
   }, [browsableCompletedList.length]);
-  
+
   const toggleBrowseMode = useCallback(() => {
       setIsBrowsingCompleted(prev => {
           setShowAnswer(false);
@@ -202,26 +202,26 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     const now = new Date();
     const todayStr = `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`;
     const updates = { 복습날짜: todayStr, 미암송여부: false };
-    
+
     switch (mode) {
-      case 'category': 
-        updates.복습여부 = true; 
+      case 'category':
+        updates.복습여부 = true;
         break;
-      case 'new': 
-        updates.뉴구절복습여부 = true; 
-        updates.복습여부 = true; 
+      case 'new':
+        updates.뉴구절복습여부 = true;
+        updates.복습여부 = true;
         break;
-      case 'wrong': 
-        updates.오답복습여부 = true; 
-        updates.복습여부 = true; 
+      case 'wrong':
+        updates.오답복습여부 = true;
+        updates.복습여부 = true;
         break;
-      case 'recent': 
-        updates.최근구절복습여부 = true; 
-        updates.복습여부 = true; 
+      case 'recent':
+        updates.최근구절복습여부 = true;
+        updates.복습여부 = true;
         break;
-      case 'favorite': 
-        updates.즐겨찾기복습여부 = true; 
-        updates.복습여부 = true; 
+      case 'favorite':
+        updates.즐겨찾기복습여부 = true;
+        updates.복습여부 = true;
         break;
       case 'turnBasedReview':
         if ((verseToComplete.maxCompletedTurn || 0) < targetTurn) updates.maxCompletedTurn = targetTurn;
@@ -240,35 +240,38 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       default: break;
     }
 
-    // --- 👇 [수정] 스낵바 알림 로직을 프로그레스 바와 동일하게 수정 ---
+    // --- 👇 [수정] 스낵바 알림 로직: 프로그레스 바 계산 로직과 동일하게 변경 ---
     if (showSnackbar && mode.startsWith('turnBased') && dailyProgress) {
+        // dailyProgress에서 가져오는 값들은 '이번 구절 완료 전' 상태임
         const { todaysGoal, completedToday } = dailyProgress;
-        
+
         // 1. 오늘의 '전체' 목표량 계산 (분모)
         // (세션 시작 시점의 남은 목표량 + 세션 시작 전 완료량)
-        const totalDailyGoal = (todaysGoal || 0) + (completedToday || 0);
+        // 이 값은 세션 진행 중 변하지 않음
+        const totalDailyGoal = (todaysGoal !== null ? todaysGoal : 0) + (completedToday || 0); // todaysGoal이 null일 수 있으므로 처리
 
         if (totalDailyGoal > 0) {
             // 2. '이번 구절 제외' 완료량 (직전 완료량)
             // (세션 시작 전 완료량 + 이번 세션에서 직전까지 완료한 량)
             const completedBeforeThisVerse = (completedToday || 0) + sessionCompleted.length;
             // 3. '이번 구절 포함' 완료량 (현재 완료량)
+            // 직전 완료량 + 1
             const completedAfterThisVerse = completedBeforeThisVerse + 1;
 
-            // 4. 직전 진행률과 현재 진행률 계산
+            // 4. 직전 진행률과 현재 진행률 계산 (정확한 분모 사용)
             const progressBefore = (completedBeforeThisVerse / totalDailyGoal) * 100;
             const progressAfter = (completedAfterThisVerse / totalDailyGoal) * 100;
 
             // 5. 경계선(50%, 75%, 100%)을 넘었는지 확인
-            if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); } 
-            else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); } 
+            if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); }
+            else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); }
             else if (progressBefore < 50 && progressAfter >= 50) { showSnackbar('오늘 목표의 절반을 달성하셨습니다! 💪', 'info'); }
         }
     }
     // --- 👆 수정 완료 ---
 
     setSessionCompleted(prev => [...prev, { ...verseToComplete, ...updates }]);
-    
+
     ignoreNextFilterRef.current = true;
     updateVerseStatus(verseToComplete.id, updates);
 
