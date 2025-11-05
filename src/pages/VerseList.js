@@ -148,7 +148,13 @@ function VerseList() {
     return allVerses.filter(v => {
         const searchLower = filters.searchText.toLowerCase();
         const tagSearchLower = filters.tagSearchText.toLowerCase();
-        const matchSearch = !searchLower || ['제목', '장절', '본문', '카테고리', '소카테고리'].some(key => (v[key] || '').toLowerCase().includes(searchLower));
+        
+        // --- 👈 [수정] '암송시작일'을 검색 대상에 포함 ---
+        const matchSearch = !searchLower || 
+            ['제목', '장절', '본문', '카테고리', '소카테고리'].some(key => (v[key] || '').toLowerCase().includes(searchLower)) ||
+            (v.암송시작일 && v.암송시작일.toLowerCase().includes(searchLower));
+        // --- 👆 [수정] 완료 ---
+            
         const matchTag = !tagSearchLower || (tagsData[v.id] || []).some(tag => tag.toLowerCase().includes(tagSearchLower));
         const matchCategory = filters.selectedCategory === '전체' || v.카테고리 === filters.selectedCategory;
         const matchSubcategory = filters.selectedSubcategory === '전체' || v.소카테고리 === filters.selectedSubcategory;

@@ -65,9 +65,28 @@ export const useVerseData = () => {
 
   const updateVerseStatus = useCallback(
     (verseId, updates) => {
-      setReviewStatusData(prev => ({ ...prev, [verseId]: { ...(prev[verseId] || {}), ...updates } }));
+      setReviewStatusData(prev => {
+        const currentStatus = prev[verseId] || {};
+        const newUpdates = { ...updates };
+
+        // --- 👈 [신규] '암송시작일' 기록 로직 ---
+        // '미암송여부'가 명시적으로 true 였을 때
+        const wasUnmemorized = currentStatus.미암송여부 === true;
+        // '미암송여부'가 false로 업데이트 될 때
+        const isNowMemorized = updates.미암송여부 === false;
+
+        // '미암송' -> '암송'으로 변경되었고, '암송시작일'이 아직 기록되지 않았을 때
+        if (wasUnmemorized && isNowMemorized && !currentStatus.암송시작일) {
+          const today = new Date();
+          const todayStr = `${today.getFullYear()}. ${today.getMonth() + 1}. ${today.getDate()}`;
+          newUpdates.암송시작일 = todayStr;
+        }
+        // --- 👆 [신규] 로직 끝 ---
+
+        return { ...prev, [verseId]: { ...currentStatus, ...newUpdates } };
+      });
     },
-    []
+    [] // 의존성 배열은 비워 둡니다 (setState의 함수형 업데이트 사용)
   );
   
   useEffect(() => {

@@ -240,7 +240,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       default: break;
     }
 
-    // --- 👇 [수정] 스낵바 알림 로직: 프로그레스 바 계산 로직과 동일하게 변경 ---
+    // --- 👇 [수정] 스낵바 알림 로직: 50%, 75% 알림 제거 ---
     if (showSnackbar && mode.startsWith('turnBased') && dailyProgress) {
         // dailyProgress에서 가져오는 값들은 '이번 구절 완료 전' 상태임
         const { todaysGoal, completedToday } = dailyProgress;
@@ -262,10 +262,10 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
             const progressBefore = (completedBeforeThisVerse / totalDailyGoal) * 100;
             const progressAfter = (completedAfterThisVerse / totalDailyGoal) * 100;
 
-            // 5. 경계선(50%, 75%, 100%)을 넘었는지 확인
+            // 5. 경계선(100%)을 넘었는지 확인 (50%, 75% 알림은 사용자가 제거 요청)
             if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); }
-            else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); }
-            else if (progressBefore < 50 && progressAfter >= 50) { showSnackbar('오늘 목표의 절반을 달성하셨습니다! 💪', 'info'); }
+            // else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); } // 75% 알림 제거
+            // else if (progressBefore < 50 && progressAfter >= 50) { showSnackbar('오늘 목표의 절반을 달성하셨습니다! 💪', 'info'); } // 50% 알림 제거
         }
     }
     // --- 👆 수정 완료 ---

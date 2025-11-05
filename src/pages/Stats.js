@@ -24,6 +24,8 @@ function Stats() {
         wrong: 0,
     },
     dailyReviewCounts: [],
+    memorizationByYear: {}, // --- [신규] ---
+    existingMemorizedCount: 0, // --- [신규] ---
   });
   const [period, setPeriod] = useState(7);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +39,25 @@ function Stats() {
       const reviewLogData = loadDataFromLocal(REVIEW_LOG_KEY);
 
       const enrichedVerses = (versesArray || []).map(v => ({ ...v, ...(reviewStatusData[v.id] || {}) }));
+      
+      // --- 👈 [신규] '암송시작일' 집계 로직 ---
+      const reviewStatusValues = Object.values(reviewStatusData || {});
+      const memorizationByYear = {};
+      let existingMemorizedCount = 0;
+
+      reviewStatusValues.forEach(status => {
+        // 1. 암송시작일이 있는 경우 (신규)
+        if (status.암송시작일) {
+          const year = status.암송시작일.split('.')[0].trim();
+          memorizationByYear[year] = (memorizationByYear[year] || 0) + 1;
+        
+        // 2. 암송시작일은 없지만, 미암송이 아닌 경우 (기존)
+        // (미암송여부: false 또는 undefined)
+        } else if (!status.미암송여부) { 
+          existingMemorizedCount++;
+        }
+      });
+      // --- 👆 [신규] 로직 끝 ---
 
       const totalVerses = enrichedVerses.length;
       const favoriteTotal = enrichedVerses.filter(v => v.즐겨찾기).length;
@@ -74,6 +95,8 @@ function Stats() {
         totalVerses, favoriteTotal, newTotal, wrongTotal, recentTotal, unmemorizedTotal, memorizedTotal,
         todayStats,
         dailyReviewCounts: dailyChartData,
+        memorizationByYear, // --- [신규] ---
+        existingMemorizedCount, // --- [신규] ---
       });
       setIsLoading(false);
     };
@@ -114,6 +137,17 @@ function Stats() {
             <Typography sx={{ fontWeight: 'bold', color: 'error.main' }}>
                 • 암송구절: <strong>{stats.memorizedTotal}</strong>개
             </Typography>
+
+            {/* --- 👇 [신규] 신규 암송 통계 표시 --- */}
+            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>신규 암송 현황</Typography>
+              <Typography>• 기존 암송 구절: <strong>{stats.existingMemorizedCount}</strong>개</Typography>
+              {Object.keys(stats.memorizationByYear || {}).sort((a,b) => b.localeCompare(a)).map(year => (
+                <Typography key={year}>• {year}년 신규 암송: <strong>{stats.memorizationByYear[year]}</strong>개</Typography>
+              ))}
+            </Box>
+            {/* --- 👆 [신규] --- */}
+            
         </Paper>
         </Grid>
         <Grid item xs={12} md={6}>
