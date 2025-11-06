@@ -240,30 +240,26 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       default: break;
     }
 
-    // --- 👇 [수정] 스낵바 알림 로직: 50%, 75% 알림 제거 ---
+    // --- 👇 [수정] 스낵바 알림 로직: 모든 알림(50, 75, 100%) 제거 ---
     if (showSnackbar && mode.startsWith('turnBased') && dailyProgress) {
         // dailyProgress에서 가져오는 값들은 '이번 구절 완료 전' 상태임
         const { todaysGoal, completedToday } = dailyProgress;
 
         // 1. 오늘의 '전체' 목표량 계산 (분모)
-        // (세션 시작 시점의 남은 목표량 + 세션 시작 전 완료량)
-        // 이 값은 세션 진행 중 변하지 않음
         const totalDailyGoal = (todaysGoal !== null ? todaysGoal : 0) + (completedToday || 0); // todaysGoal이 null일 수 있으므로 처리
 
         if (totalDailyGoal > 0) {
             // 2. '이번 구절 제외' 완료량 (직전 완료량)
-            // (세션 시작 전 완료량 + 이번 세션에서 직전까지 완료한 량)
             const completedBeforeThisVerse = (completedToday || 0) + sessionCompleted.length;
             // 3. '이번 구절 포함' 완료량 (현재 완료량)
-            // 직전 완료량 + 1
             const completedAfterThisVerse = completedBeforeThisVerse + 1;
 
             // 4. 직전 진행률과 현재 진행률 계산 (정확한 분모 사용)
             const progressBefore = (completedBeforeThisVerse / totalDailyGoal) * 100;
             const progressAfter = (completedAfterThisVerse / totalDailyGoal) * 100;
 
-            // 5. 경계선(100%)을 넘었는지 확인 (50%, 75% 알림은 사용자가 제거 요청)
-            if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); }
+            // 5. 경계선 알림 제거
+            // if (progressBefore < 100 && progressAfter >= 100) { showSnackbar('오늘의 목표 달성을 축하합니다! 🎉 수고하셨습니다.', 'success'); } // 100% 알림 제거
             // else if (progressBefore < 75 && progressAfter >= 75) { showSnackbar('오늘 목표의 75%를 달성했습니다! 🏃', 'info'); } // 75% 알림 제거
             // else if (progressBefore < 50 && progressAfter >= 50) { showSnackbar('오늘 목표의 절반을 달성하셨습니다! 💪', 'info'); } // 50% 알림 제거
         }
