@@ -113,11 +113,75 @@ function VerseManager() {
   }, [loadData, showSnackbar]);
 
   const handleAddOrUpdateVerse = async () => {
-    if (!newVerse.제목 || !newVerse.본문 || !newVerse.카테고리 || !newVerse.장절) { showSnackbar('카테고리, 제목, 장절, 본문은 필수입니다.', 'warning'); return; }
-    const updatedVerses = editingId ? verses.map((v) => v.id === editingId ? { ...v, ...newVerse } : v) : [...verses, { ...newVerse, id: generateId(), 번호: String(verses.length + 1) }];
+    if (!newVerse.제목 || !newVerse.본문 || !newVerse.카테고리 || !newVerse.장절) { 
+        showSnackbar('카테고리, 제목, 장절, 본문은 필수입니다.', 'warning'); 
+        return; 
+    }
+    
+    let newStatusToSave = null;
+    let verseIdForStatus = editingId;
+    const todayStr = `${new Date().getFullYear()}. ${new Date().getMonth() + 1}. ${new Date().getDate()}`;
+
+    // --- 👇 [신규] '암송시작일' 기록 로직 ---
+    if (editingId) {
+        // --- (Case 1) 수정일 때 ---
+        const oldVerse = verses.find(v => v.id === editingId);
+        if (!oldVerse) return; // Error: old verse not found
+
+        // '미암송' -> '암송'으로 변경되는 시점
+        const wasUnmemorized = oldVerse.미암송여부 === true;
+        const isNowMemorized = newVerse.미암송여부 === false;
+        
+        const existingStatus = reviewStatusData[editingId] || {};
+
+        if (wasUnmemorized && isNowMemorized && !existingStatus.암송시작일) {
+            // '암송시작일'이 없는 상태에서 '미암송'이 '암송'으로 변경되면 날짜 기록
+            newStatusToSave = { ...existingStatus, 암송시작일: todayStr };
+        }
+    
+    } else {
+        // --- (Case 2) 신규 추가일 때 ---
+        if (newVerse.미암송여부 === false) {
+            // '암송' 상태로 신규 추가되면, 오늘 날짜로 '암송시작일' 기록
+            verseIdForStatus = generateId(); // ID를 생성
+            newVerse.id = verseIdForStatus; // 'newVerse' 객체에 ID를 미리 할당
+            newVerse.번호 = String(verses.length + 1);
+            
+            newStatusToSave = { 암송시작일: todayStr };
+        }
+    }
+    // --- 👆 [신규] 로직 끝 ---
+
+    // 'newVerse'에 ID가 할당되지 않은 경우 (신규 + '미암송' 체크)
+    if (!newVerse.id) {
+        newVerse.id = generateId();
+        newVerse.번호 = String(verses.length + 1);
+    }
+
+    // 1. 구절 데이터 자체를 VERSES_DATA_KEY에 저장
+    const updatedVerses = editingId 
+        ? verses.map((v) => (v.id === editingId ? { ...v, ...newVerse } : v))
+        : [...verses, newVerse]; 
+        
     const successMsg = editingId ? '구절이 수정되었습니다.' : '새 구절이 추가되었습니다.';
-    if (await handleSaveData(VERSES_DATA_KEY, updatedVerses, successMsg)) resetForm();
-  };
+
+    // 'handleSaveData'는 내부에 loadData()를 호출하여 데이터를 새로고침합니다.
+    const saveVerseSuccess = await handleSaveData(VERSES_DATA_KEY, updatedVerses, successMsg);
+
+    // 2. '암송시작일'은 REVIEW_STATUS_KEY에 저장
+    if (saveVerseSuccess && newStatusToSave) {
+        // 'handleSaveData'가 어차피 loadData()를 호출할 것이므로,
+        // 지금 당장 'reviewStatusData' state를 업데이트할 필요는 없다.
+        // 그냥 'saveDataToLocal'로 저장만 하면, loadData()가 읽어서 반영할 것.
+        const updatedStatusData = { ...reviewStatusData, [verseIdForStatus]: newStatusToSave };
+        saveDataToLocal(REVIEW_STATUS_KEY, updatedStatusData);
+        // 'handleSaveData'가 호출한 'loadData'가 이 변경사항을 로드하여 앱 상태에 반영합니다.
+    }
+
+    if (saveVerseSuccess) {
+        resetForm();
+    }
+};
 
   const handleDelete = async (idToDelete) => {
     if (!window.confirm('정말로 삭제하시겠습니까?')) return;
