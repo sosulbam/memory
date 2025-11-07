@@ -24,6 +24,15 @@ import { DataContext } from '../contexts/DataContext';
 import { saveDataToLocal } from '../api/localStorageApi';
 import { VERSES_DATA_KEY, TAGS_DATA_KEY, REVIEW_STATUS_KEY, REVIEW_LOG_KEY, TURN_SCHEDULE_KEY, LAST_APP_STATE_KEY } from '../constants';
 
+// --- [신규] 오늘 날짜를 YYYY-MM-DD 형식으로 반환하는 헬퍼 함수 ---
+const getTodayDateString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 function VerseRow({ verse, onEdit, onDelete, onTagOpen }) {
   const [open, setOpen] = useState(false);
   return (
@@ -42,7 +51,6 @@ function VerseRow({ verse, onEdit, onDelete, onTagOpen }) {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1, padding: 2, backgroundColor: '#fafafa', borderRadius: 1, border: '1px solid #eee' }}>
               <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontSize: '1rem', lineHeight: 1.6 }}>{verse.본문}</Typography>
-              {/* --- [수정] 암송시작일이 있으면 표시 --- */}
               {verse.암송시작일 && (
                 <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
                   암송시작일: {verse.암송시작일}
@@ -64,7 +72,7 @@ function VerseManager() {
   const [newVerse, setNewVerse] = useState({ 
     카테고리: '', 소카테고리: '', 제목: '', 장절: '', 본문: '', 
     미암송여부: false, 뉴구절여부: false, 즐겨찾기: false,
-    암송시작일: '' // --- [신규] '암송시작일' 필드 추가 ---
+    암송시작일: getTodayDateString() // --- [수정] 기본값을 오늘 날짜로 설정 ---
   });
   const [editingId, setEditingId] = useState(null);
   const [pagination, setPagination] = useState({ page: 0, rowsPerPage: 10 });
@@ -102,11 +110,13 @@ function VerseManager() {
 
   const showSnackbar = (message, severity = 'success') => setSnackbar({ open: true, message, severity });
   const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+  
+  // --- [수정] resetForm 시 '암송시작일'을 오늘 날짜로 ---
   const resetForm = () => { 
     setNewVerse({ 
       카테고리: '', 소카테고리: '', 제목: '', 장절: '', 본문: '',
       미암송여부: false, 뉴구절여부: false, 즐겨찾기: false,
-      암송시작일: '' // --- [신규] '암송시작일' 필드 초기화 ---
+      암송시작일: getTodayDateString() 
     }); 
     setEditingId(null); 
   };
@@ -115,12 +125,11 @@ function VerseManager() {
     setIsSaving(true);
     saveDataToLocal(key, dataToSave);
     if (successMessage) showSnackbar(successMessage);
-    await loadData(); // loadData를 호출하여 originalVerses를 갱신
+    await loadData(); 
     setIsSaving(false);
-    return true; // 로컬 저장은 성공으로 간주
+    return true; 
   }, [loadData, showSnackbar]);
 
-  // --- 👇 [수정] '암송시작일'을 구절 객체에 직접 저장하는 간단한 로직 ---
   const handleAddOrUpdateVerse = async () => {
     if (!newVerse.제목 || !newVerse.본문 || !newVerse.카테고리 || !newVerse.장절) { 
         showSnackbar('카테고리, 제목, 장절, 본문은 필수입니다.', 'warning'); 
@@ -144,12 +153,10 @@ function VerseManager() {
         
     const successMsg = editingId ? '구절이 수정되었습니다.' : '새 구절이 추가되었습니다.';
 
-    // '암송시작일'이 포함된 구절 객체 자체를 'VERSES_DATA_KEY'에 저장
     if (await handleSaveData(VERSES_DATA_KEY, updatedVerses, successMsg)) {
         resetForm();
     }
   };
-  // --- 👆 [수정] 완료 ---
 
   const handleDelete = async (idToDelete) => {
     if (!window.confirm('정말로 삭제하시겠습니까?')) return;
@@ -161,8 +168,8 @@ function VerseManager() {
     }
   };
 
+  // --- [수정] handleEdit 시 '암송시작일'이 없으면 빈 문자열로 ---
   const handleEdit = (verse) => { 
-    // 편집 시 '암송시작일'이 없으면 빈 문자열로 초기화 (undefined 방지)
     setEditingId(verse.id); 
     setNewVerse({ ...verse, 암송시작일: verse.암송시작일 || '' }); 
     window.scrollTo({ top: 0, behavior: 'smooth' }); 
@@ -196,11 +203,9 @@ function VerseManager() {
 
   const handleDataDownload = () => {
     if (!originalVerses?.length) { alert('다운로드할 데이터가 없습니다.'); return; }
-    // --- [수정] 엑셀 다운로드 시 '암송시작일'이 'originalVerses'에 이미 포함되어 있음 ---
-    // (reviewStatusData에서 가져올 필요 없음)
     const dataToExport = originalVerses.map(v => ({ 
-        ...v, // '암송시작일'이 v 안에 이미 포함됨
-        ...(reviewStatusData[v.id] || {}), // 나머지 복습 상태 추가
+        ...v, 
+        ...(reviewStatusData[v.id] || {}), 
         태그: (tagsData[v.id] || []).join(', ') 
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -321,7 +326,10 @@ function VerseManager() {
     return verses.filter(v => {
         const searchLower = filters.searchText.toLowerCase();
         const tagSearchLower = filters.tagSearchText.toLowerCase();
-        const matchSearch = !searchLower || ['제목', '장절', '본문', '카테고리', '소카테고리'].some(key => (v[key] || '').toLowerCase().includes(searchLower));
+        // --- [수정] '암송시작일'도 검색 대상에 포함 ---
+        const matchSearch = !searchLower || 
+            ['제목', '장절', '본문', '카테고리', '소카테고리', '암송시작일'].some(key => (v[key] || '').toLowerCase().includes(searchLower));
+        
         const matchTag = !tagSearchLower || (tagsData[v.id] || []).some(tag => tag.toLowerCase().includes(tagSearchLower));
         const matchCategory = filters.selectedCategory === '전체' || v.카테고리 === filters.selectedCategory;
         const matchSubcategory = filters.selectedSubcategory === '전체' || v.소카테고리 === filters.selectedSubcategory;
@@ -352,17 +360,18 @@ function VerseManager() {
                 <Grid item xs={12} sm={4}><TextField fullWidth label="제목 (*)" value={newVerse.제목} onChange={(e) => setNewVerse({ ...newVerse, 제목: e.target.value })} /></Grid>
                 <Grid item xs={12} sm={4}><TextField fullWidth label="장절 (*)" value={newVerse.장절} onChange={(e) => setNewVerse({ ...newVerse, 장절: e.target.value })} /></Grid>
                 
-                {/* --- 👇 [신규] '암송시작일' 입력 필드 --- */}
+                {/* --- 👇 [수정] '암송시작일'을 캘린더 피커로 변경 --- */}
                 <Grid item xs={12} sm={4}>
                     <TextField 
                         fullWidth 
-                        label="암송시작일 (예: 2025. 1. 1.)" 
+                        label="암송시작일" 
+                        type="date" // type="date"로 변경
                         value={newVerse.암송시작일} 
                         onChange={(e) => setNewVerse({ ...newVerse, 암송시작일: e.target.value })} 
-                        helperText="날짜를 입력하면 통계에 반영됩니다."
+                        InputLabelProps={{ shrink: true }} // 레이블이 겹치지 않도록 설정
                     />
                 </Grid>
-                {/* --- 👆 [신규] --- */}
+                {/* --- 👆 [수정] 완료 --- */}
 
                 <Grid item xs={12} sm={4}><TextField fullWidth label="본문 (*)" multiline rows={3} value={newVerse.본문} onChange={(e) => setNewVerse({ ...newVerse, 본문: e.target.value })} /></Grid>
                 

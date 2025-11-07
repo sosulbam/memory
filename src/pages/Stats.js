@@ -40,23 +40,21 @@ function Stats() {
 
       const enrichedVerses = (versesArray || []).map(v => ({ ...v, ...(reviewStatusData[v.id] || {}) }));
       
-      // --- 👈 [수정] '암송시작일' 집계 로직 (enrichedVerses에서 직접 읽기) ---
       const memorizationByYear = {};
       let existingMemorizedCount = 0;
 
-      // reviewStatusValues 대신 enrichedVerses를 사용
       enrichedVerses.forEach(verse => {
-        // 1. 암송시작일이 있는 경우 (신규)
-        if (verse.암송시작일) {
-          const year = verse.암송시작일.split('.')[0].trim();
-          memorizationByYear[year] = (memorizationByYear[year] || 0) + 1;
-        
-        // 2. 암송시작일은 없지만, 미암송이 아닌 경우 (기존)
+        // --- 👇 [수정] 날짜 형식이 'YYYY-MM-DD'이므로 split('-')로 변경 ---
+        if (verse.암송시작일 && typeof verse.암송시작일 === 'string') {
+          const year = verse.암송시작일.split('-')[0].trim();
+          if (year) {
+            memorizationByYear[year] = (memorizationByYear[year] || 0) + 1;
+          }
+        // --- 👆 [수정] 완료 ---
         } else if (!verse.미암송여부) { 
           existingMemorizedCount++;
         }
       });
-      // --- 👆 [수정] 로직 끝 ---
 
       const totalVerses = enrichedVerses.length;
       const favoriteTotal = enrichedVerses.filter(v => v.즐겨찾기).length;
@@ -94,8 +92,8 @@ function Stats() {
         totalVerses, favoriteTotal, newTotal, wrongTotal, recentTotal, unmemorizedTotal, memorizedTotal,
         todayStats,
         dailyReviewCounts: dailyChartData,
-        memorizationByYear, // --- [신규] ---
-        existingMemorizedCount, // --- [신규] ---
+        memorizationByYear, 
+        existingMemorizedCount, 
       });
       setIsLoading(false);
     };
@@ -137,7 +135,6 @@ function Stats() {
                 • 암송구절: <strong>{stats.memorizedTotal}</strong>개
             </Typography>
 
-            {/* --- 👇 [신규] 신규 암송 통계 표시 --- */}
             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>신규 암송 현황</Typography>
               <Typography>• 기존 암송 구절: <strong>{stats.existingMemorizedCount}</strong>개</Typography>
@@ -145,7 +142,6 @@ function Stats() {
                 <Typography key={year}>• {year}년 신규 암송: <strong>{stats.memorizationByYear[year]}</strong>개</Typography>
               ))}
             </Box>
-            {/* --- 👆 [신규] --- */}
             
         </Paper>
         </Grid>
