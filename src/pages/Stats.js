@@ -24,8 +24,8 @@ function Stats() {
         wrong: 0,
     },
     dailyReviewCounts: [],
-    memorizationByYear: {}, // --- [신규] ---
-    existingMemorizedCount: 0, // --- [신규] ---
+    memorizationByYear: {}, 
+    existingMemorizedCount: 0, 
   });
   const [period, setPeriod] = useState(7);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,24 +40,23 @@ function Stats() {
 
       const enrichedVerses = (versesArray || []).map(v => ({ ...v, ...(reviewStatusData[v.id] || {}) }));
       
-      // --- 👈 [신규] '암송시작일' 집계 로직 ---
-      const reviewStatusValues = Object.values(reviewStatusData || {});
+      // --- 👈 [수정] '암송시작일' 집계 로직 (enrichedVerses에서 직접 읽기) ---
       const memorizationByYear = {};
       let existingMemorizedCount = 0;
 
-      reviewStatusValues.forEach(status => {
+      // reviewStatusValues 대신 enrichedVerses를 사용
+      enrichedVerses.forEach(verse => {
         // 1. 암송시작일이 있는 경우 (신규)
-        if (status.암송시작일) {
-          const year = status.암송시작일.split('.')[0].trim();
+        if (verse.암송시작일) {
+          const year = verse.암송시작일.split('.')[0].trim();
           memorizationByYear[year] = (memorizationByYear[year] || 0) + 1;
         
         // 2. 암송시작일은 없지만, 미암송이 아닌 경우 (기존)
-        // (미암송여부: false 또는 undefined)
-        } else if (!status.미암송여부) { 
+        } else if (!verse.미암송여부) { 
           existingMemorizedCount++;
         }
       });
-      // --- 👆 [신규] 로직 끝 ---
+      // --- 👆 [수정] 로직 끝 ---
 
       const totalVerses = enrichedVerses.length;
       const favoriteTotal = enrichedVerses.filter(v => v.즐겨찾기).length;

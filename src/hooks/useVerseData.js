@@ -20,7 +20,11 @@ export const useVerseData = () => {
 
   useEffect(() => {
     if (rawVerses.length > 0) {
-      const enriched = rawVerses.map(v => ({ ...v, ...(reviewStatusData[v.id] || {}) }));
+      // --- [수정] '암송시작일'이 rawVerses에 있으므로, reviewStatusData와 합칠 때 덮어쓰지 않도록 함 ---
+      const enriched = rawVerses.map(v => ({ 
+          ...v, // v에 '암송시작일' 포함
+          ...(reviewStatusData[v.id] || {}) 
+      }));
       setOriginalVerses(enriched);
     } else {
       setOriginalVerses([]);
@@ -69,19 +73,9 @@ export const useVerseData = () => {
         const currentStatus = prev[verseId] || {};
         const newUpdates = { ...updates };
 
-        // --- 👈 [신규] '암송시작일' 기록 로직 ---
-        // '미암송여부'가 명시적으로 true 였을 때
-        const wasUnmemorized = currentStatus.미암송여부 === true;
-        // '미암송여부'가 false로 업데이트 될 때
-        const isNowMemorized = updates.미암송여부 === false;
-
-        // '미암송' -> '암송'으로 변경되었고, '암송시작일'이 아직 기록되지 않았을 때
-        if (wasUnmemorized && isNowMemorized && !currentStatus.암송시작일) {
-          const today = new Date();
-          const todayStr = `${today.getFullYear()}. ${today.getMonth() + 1}. ${today.getDate()}`;
-          newUpdates.암송시작일 = todayStr;
-        }
-        // --- 👆 [신규] 로직 끝 ---
+        // --- 👇 [수정] '암송시작일' 자동 기록 로직 제거 ---
+        // '암송시작일'은 VerseManager에서 수동으로 VERSES_DATA_KEY에 저장됩니다.
+        // --- 👆 [수정] 완료 ---
 
         return { ...prev, [verseId]: { ...currentStatus, ...newUpdates } };
       });
@@ -122,21 +116,13 @@ export const useVerseData = () => {
       const turnKeys = ['currentReviewTurn', 'maxCompletedTurn', 'currentReviewTurnForNew', 'maxCompletedTurnForNew', 'currentReviewTurnForRecent', 'maxCompletedTurnForRecent'];
       const boolKeys = ['복습여부', '뉴구절복습여부', '오답복습여부', '최근구절복습여부', '즐겨찾기복습여부'];
 
-      // --- 👇 여기가 수정된 부분입니다 ---
-      // 'all_turns...' 관련 타입들을 제거하여, 해당 타입으로 초기화 시 통계 로그가 삭제되지 않도록 수정합니다.
-      // (예: '차수별 복습' 완료 팝업)
-      // 반면, 'new', 'recent' 등(수동 초기화 버튼)은 로그를 초기화하는 기존 로직을 유지합니다.
       const logResetTypes = {
-        // all_turns: 'general', // 삭제
-        // all_turns_new: 'new', // 삭제
-        // all_turns_recent: 'recent', // 삭제
         category: 'general',
         new: 'new',
         wrong: 'wrong',
         recent: 'recent',
         favorite: 'favorite',
       };
-      // --- 👆 수정 끝 ---
 
       const logCategoryToReset = logResetTypes[type];
       const isFullReset = type === 'all';
@@ -147,27 +133,23 @@ export const useVerseData = () => {
 
         if (log[kst] && typeof log[kst] === 'object') {
           if (isFullReset) {
-            // '전체 초기화' 시 오늘 모든 로그를 0으로 설정
             Object.keys(log[kst]).forEach(key => {
               if (key !== 'total') {
                 log[kst][key] = 0;
               }
             });
           } else if (logCategoryToReset) {
-            // 특정 타입 초기화 시 해당 카테고리 로그만 0으로 설정
             log[kst][logCategoryToReset] = 0;
           }
 
-          // total 값을 재계산합니다.
           const totalCount = Object.keys(log[kst]).reduce((sum, key) => key !== 'total' ? sum + (log[kst][key] || 0) : sum, 0);
           log[kst].total = totalCount;
           
           saveDataToLocal(REVIEW_LOG_KEY, log);
-          setReviewLogData(log); // 변경된 로그 상태를 즉시 반영
+          setReviewLogData(log); 
         }
       }
 
-      // 아래의 '복습 상태' 초기화 로직은 통계와 관계없이 항상 실행됩니다.
       const resetMap = {
         new: ['뉴구절복습여부'],
         wrong: ['오답복습여부'],
@@ -202,7 +184,7 @@ export const useVerseData = () => {
       }
 
       saveDataToLocal(REVIEW_STATUS_KEY, newStatusData);
-      setReviewStatusData(newStatusData); // 변경된 상태를 즉시 반영
+      setReviewStatusData(newStatusData); 
       if (showSnackbar) showSnackbar('선택한 복습 기록이 초기화되었습니다.', 'success');
       
     },

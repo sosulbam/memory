@@ -42,6 +42,12 @@ function VerseRow({ verse, onEdit, onDelete, onTagOpen }) {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1, padding: 2, backgroundColor: '#fafafa', borderRadius: 1, border: '1px solid #eee' }}>
               <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontSize: '1rem', lineHeight: 1.6 }}>{verse.본문}</Typography>
+              {/* --- [수정] 암송시작일이 있으면 표시 --- */}
+              {verse.암송시작일 && (
+                <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
+                  암송시작일: {verse.암송시작일}
+                </Typography>
+              )}
             </Box>
           </Collapse>
         </TableCell>
@@ -57,7 +63,8 @@ function VerseManager() {
   const [isSaving, setIsSaving] = useState(false);
   const [newVerse, setNewVerse] = useState({ 
     카테고리: '', 소카테고리: '', 제목: '', 장절: '', 본문: '', 
-    미암송여부: false, 뉴구절여부: false, 즐겨찾기: false 
+    미암송여부: false, 뉴구절여부: false, 즐겨찾기: false,
+    암송시작일: '' // --- [신규] '암송시작일' 필드 추가 ---
   });
   const [editingId, setEditingId] = useState(null);
   const [pagination, setPagination] = useState({ page: 0, rowsPerPage: 10 });
@@ -98,7 +105,8 @@ function VerseManager() {
   const resetForm = () => { 
     setNewVerse({ 
       카테고리: '', 소카테고리: '', 제목: '', 장절: '', 본문: '',
-      미암송여부: false, 뉴구절여부: false, 즐겨찾기: false 
+      미암송여부: false, 뉴구절여부: false, 즐겨찾기: false,
+      암송시작일: '' // --- [신규] '암송시작일' 필드 초기화 ---
     }); 
     setEditingId(null); 
   };
@@ -107,81 +115,41 @@ function VerseManager() {
     setIsSaving(true);
     saveDataToLocal(key, dataToSave);
     if (successMessage) showSnackbar(successMessage);
-    await loadData();
+    await loadData(); // loadData를 호출하여 originalVerses를 갱신
     setIsSaving(false);
     return true; // 로컬 저장은 성공으로 간주
   }, [loadData, showSnackbar]);
 
+  // --- 👇 [수정] '암송시작일'을 구절 객체에 직접 저장하는 간단한 로직 ---
   const handleAddOrUpdateVerse = async () => {
     if (!newVerse.제목 || !newVerse.본문 || !newVerse.카테고리 || !newVerse.장절) { 
         showSnackbar('카테고리, 제목, 장절, 본문은 필수입니다.', 'warning'); 
         return; 
     }
     
-    let newStatusToSave = null;
-    let verseIdForStatus = editingId;
-    const todayStr = `${new Date().getFullYear()}. ${new Date().getMonth() + 1}. ${new Date().getDate()}`;
-
-    // --- 👇 [신규] '암송시작일' 기록 로직 ---
-    if (editingId) {
-        // --- (Case 1) 수정일 때 ---
-        const oldVerse = verses.find(v => v.id === editingId);
-        if (!oldVerse) return; // Error: old verse not found
-
-        // '미암송' -> '암송'으로 변경되는 시점
-        const wasUnmemorized = oldVerse.미암송여부 === true;
-        const isNowMemorized = newVerse.미암송여부 === false;
-        
-        const existingStatus = reviewStatusData[editingId] || {};
-
-        if (wasUnmemorized && isNowMemorized && !existingStatus.암송시작일) {
-            // '암송시작일'이 없는 상태에서 '미암송'이 '암송'으로 변경되면 날짜 기록
-            newStatusToSave = { ...existingStatus, 암송시작일: todayStr };
-        }
+    let updatedVerses;
     
+    if (editingId) {
+        // (Case 1) 수정일 때
+        updatedVerses = verses.map((v) => (v.id === editingId ? { ...v, ...newVerse } : v));
     } else {
-        // --- (Case 2) 신규 추가일 때 ---
-        if (newVerse.미암송여부 === false) {
-            // '암송' 상태로 신규 추가되면, 오늘 날짜로 '암송시작일' 기록
-            verseIdForStatus = generateId(); // ID를 생성
-            newVerse.id = verseIdForStatus; // 'newVerse' 객체에 ID를 미리 할당
-            newVerse.번호 = String(verses.length + 1);
-            
-            newStatusToSave = { 암송시작일: todayStr };
-        }
+        // (Case 2) 신규 추가일 때
+        const newVerseWithId = {
+            ...newVerse,
+            id: generateId(),
+            번호: String(verses.length + 1)
+        };
+        updatedVerses = [...verses, newVerseWithId];
     }
-    // --- 👆 [신규] 로직 끝 ---
-
-    // 'newVerse'에 ID가 할당되지 않은 경우 (신규 + '미암송' 체크)
-    if (!newVerse.id) {
-        newVerse.id = generateId();
-        newVerse.번호 = String(verses.length + 1);
-    }
-
-    // 1. 구절 데이터 자체를 VERSES_DATA_KEY에 저장
-    const updatedVerses = editingId 
-        ? verses.map((v) => (v.id === editingId ? { ...v, ...newVerse } : v))
-        : [...verses, newVerse]; 
         
     const successMsg = editingId ? '구절이 수정되었습니다.' : '새 구절이 추가되었습니다.';
 
-    // 'handleSaveData'는 내부에 loadData()를 호출하여 데이터를 새로고침합니다.
-    const saveVerseSuccess = await handleSaveData(VERSES_DATA_KEY, updatedVerses, successMsg);
-
-    // 2. '암송시작일'은 REVIEW_STATUS_KEY에 저장
-    if (saveVerseSuccess && newStatusToSave) {
-        // 'handleSaveData'가 어차피 loadData()를 호출할 것이므로,
-        // 지금 당장 'reviewStatusData' state를 업데이트할 필요는 없다.
-        // 그냥 'saveDataToLocal'로 저장만 하면, loadData()가 읽어서 반영할 것.
-        const updatedStatusData = { ...reviewStatusData, [verseIdForStatus]: newStatusToSave };
-        saveDataToLocal(REVIEW_STATUS_KEY, updatedStatusData);
-        // 'handleSaveData'가 호출한 'loadData'가 이 변경사항을 로드하여 앱 상태에 반영합니다.
-    }
-
-    if (saveVerseSuccess) {
+    // '암송시작일'이 포함된 구절 객체 자체를 'VERSES_DATA_KEY'에 저장
+    if (await handleSaveData(VERSES_DATA_KEY, updatedVerses, successMsg)) {
         resetForm();
     }
-};
+  };
+  // --- 👆 [수정] 완료 ---
 
   const handleDelete = async (idToDelete) => {
     if (!window.confirm('정말로 삭제하시겠습니까?')) return;
@@ -193,7 +161,12 @@ function VerseManager() {
     }
   };
 
-  const handleEdit = (verse) => { setEditingId(verse.id); setNewVerse(verse); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleEdit = (verse) => { 
+    // 편집 시 '암송시작일'이 없으면 빈 문자열로 초기화 (undefined 방지)
+    setEditingId(verse.id); 
+    setNewVerse({ ...verse, 암송시작일: verse.암송시작일 || '' }); 
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  };
   const openTagDialog = (verse) => { setTagEditVerse(verse); setTagDialogOpen(true); };
   const closeTagDialog = () => { setTagEditVerse(null); setCurrentTagInput(''); setTagDialogOpen(false); };
 
@@ -215,7 +188,7 @@ function VerseManager() {
   };
 
   const handleTemplateDownload = () => {
-    const ws = XLSX.utils.aoa_to_sheet([['id', '번호', '카테고리', '소카테고리', '제목', '장절', '본문', '태그', '미암송여부', '뉴구절여부', '오답여부', '즐겨찾기', '최근구절여부', 'currentReviewTurn', 'maxCompletedTurn', 'currentReviewTurnForNew', 'maxCompletedTurnForNew', 'currentReviewTurnForRecent', 'maxCompletedTurnForRecent', '복습여부', '뉴구절복습여부', '오답복습여부', '최근구절복습여부', '즐겨찾기복습여부', '복습날짜']]);
+    const ws = XLSX.utils.aoa_to_sheet([['id', '번호', '카테고리', '소카테고리', '제목', '장절', '본문', '태그', '미암송여부', '뉴구절여부', '오답여부', '즐겨찾기', '최근구절여부', '암송시작일', 'currentReviewTurn', 'maxCompletedTurn', 'currentReviewTurnForNew', 'maxCompletedTurnForNew', 'currentReviewTurnForRecent', 'maxCompletedTurnForRecent', '복습여부', '뉴구절복습여부', '오답복습여부', '최근구절복습여부', '즐겨찾기복습여부', '복습날짜']]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'VerseTemplate');
     XLSX.writeFile(wb, 'verse_template.xlsx');
@@ -223,7 +196,13 @@ function VerseManager() {
 
   const handleDataDownload = () => {
     if (!originalVerses?.length) { alert('다운로드할 데이터가 없습니다.'); return; }
-    const dataToExport = originalVerses.map(v => ({ ...v, ...reviewStatusData[v.id], 태그: (tagsData[v.id] || []).join(', ') }));
+    // --- [수정] 엑셀 다운로드 시 '암송시작일'이 'originalVerses'에 이미 포함되어 있음 ---
+    // (reviewStatusData에서 가져올 필요 없음)
+    const dataToExport = originalVerses.map(v => ({ 
+        ...v, // '암송시작일'이 v 안에 이미 포함됨
+        ...(reviewStatusData[v.id] || {}), // 나머지 복습 상태 추가
+        태그: (tagsData[v.id] || []).join(', ') 
+    }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'MyVerses');
@@ -372,7 +351,20 @@ function VerseManager() {
                 <Grid item xs={12} sm={4}><Autocomplete freeSolo options={subcategoryOptions} value={newVerse.소카테고리} disabled={!newVerse.카테고리} onInputChange={(e, val) => setNewVerse(p => ({ ...p, 소카테고리: val }))} renderInput={(params) => <TextField {...params} label="소카테고리" />} /></Grid>
                 <Grid item xs={12} sm={4}><TextField fullWidth label="제목 (*)" value={newVerse.제목} onChange={(e) => setNewVerse({ ...newVerse, 제목: e.target.value })} /></Grid>
                 <Grid item xs={12} sm={4}><TextField fullWidth label="장절 (*)" value={newVerse.장절} onChange={(e) => setNewVerse({ ...newVerse, 장절: e.target.value })} /></Grid>
-                <Grid item xs={12} sm={8}><TextField fullWidth label="본문 (*)" multiline rows={3} value={newVerse.본문} onChange={(e) => setNewVerse({ ...newVerse, 본문: e.target.value })} /></Grid>
+                
+                {/* --- 👇 [신규] '암송시작일' 입력 필드 --- */}
+                <Grid item xs={12} sm={4}>
+                    <TextField 
+                        fullWidth 
+                        label="암송시작일 (예: 2025. 1. 1.)" 
+                        value={newVerse.암송시작일} 
+                        onChange={(e) => setNewVerse({ ...newVerse, 암송시작일: e.target.value })} 
+                        helperText="날짜를 입력하면 통계에 반영됩니다."
+                    />
+                </Grid>
+                {/* --- 👆 [신규] --- */}
+
+                <Grid item xs={12} sm={4}><TextField fullWidth label="본문 (*)" multiline rows={3} value={newVerse.본문} onChange={(e) => setNewVerse({ ...newVerse, 본문: e.target.value })} /></Grid>
                 
                 <Grid item xs={12}>
                     <FormGroup row>
@@ -465,6 +457,11 @@ function VerseManager() {
                                 <Typography variant="h6" align="center">{v.제목 || "제목 없음"}</Typography>
                                 <Typography color="text.secondary" align="left">{v.장절}</Typography>
                                 <Typography variant="body1" sx={{ my: 1.5, whiteSpace: 'pre-line', flexGrow: 1 }}>{v.본문}</Typography>
+                                {v.암송시작일 && (
+                                    <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>
+                                    암송시작일: {v.암송시작일}
+                                    </Typography>
+                                )}
                                 {(tagsData[v.id] || []).length > 0 && (<Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{tagsData[v.id].map(tag => <Chip key={tag} label={tag} size="small" />)}</Box>)}
                                 <Typography color="text.secondary" align="right" sx={{ mt: 1 }}>{v.장절}</Typography>
                             </CardContent>
