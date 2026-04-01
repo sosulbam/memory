@@ -7,6 +7,7 @@ import {
   TURN_SCHEDULE_KEY,
   REVIEW_LOG_KEY,
 } from '../constants';
+import { getKSTDateString } from '../utils/dateUtils';
 
 export const useVerseData = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -129,7 +130,7 @@ export const useVerseData = () => {
 
       if (logCategoryToReset || isFullReset) {
         const log = loadDataFromLocal(REVIEW_LOG_KEY) || {};
-        const kst = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const kst = getKSTDateString();
 
         if (log[kst] && typeof log[kst] === 'object') {
           if (isFullReset) {
