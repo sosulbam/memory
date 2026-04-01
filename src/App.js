@@ -1,7 +1,8 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Box, Typography, IconButton } from '@mui/material';
+import { Box, Typography, IconButton, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 
 // Contexts & Providers
 import { SnackbarProvider, useSnackbar } from './contexts/SnackbarContext';
@@ -42,11 +43,30 @@ const pageTitles = {
 const AppLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  
+  const [swRegistration, setSwRegistration] = useState(null);
+
   const location = useLocation();
   const { settings, setters } = useAppSettings();
   const { resetReviewStatus } = useContext(DataContext);
   const { showSnackbar } = useSnackbar();
+
+  // 새 버전 감지
+  useEffect(() => {
+    const handler = (e) => setSwRegistration(e.detail);
+    window.addEventListener('swUpdateAvailable', handler);
+    return () => window.removeEventListener('swUpdateAvailable', handler);
+  }, []);
+
+  const handleUpdate = () => {
+    if (swRegistration?.waiting) {
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      swRegistration.waiting.addEventListener('statechange', (e) => {
+        if (e.target.state === 'activated') window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  };
 
   const handleReset = (type) => {
     resetReviewStatus(type, showSnackbar);
@@ -96,6 +116,25 @@ const AppLayout = () => {
         </Typography>
         <Box sx={{width: 40}} />
       </Box>
+
+      {/* 새 버전 업데이트 배너 */}
+      {swRegistration && (
+        <Box sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          px: 2, py: 1,
+          bgcolor: '#1565c0', color: 'white',
+          position: 'sticky', top: 57, zIndex: 1099,
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SystemUpdateIcon fontSize="small" />
+            <Typography variant="body2">새 버전이 있습니다</Typography>
+          </Box>
+          <Button size="small" variant="contained" onClick={handleUpdate}
+            sx={{ bgcolor: 'white', color: '#1565c0', fontWeight: 'bold', '&:hover': { bgcolor: '#e3f2fd' } }}>
+            지금 업데이트
+          </Button>
+        </Box>
+      )}
 
       <Outlet context={{ setDrawerOpen }} />
       <ResetDialog

@@ -1,12 +1,14 @@
 // src/pages/SettingsPage.js
 import React from 'react';
 import {
-  Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider
+  Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider
 } from '@mui/material';
 import TextDecreaseIcon from '@mui/icons-material/TextDecrease';
 import TextIncreaseIcon from '@mui/icons-material/TextIncrease';
+import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { THEMES } from '../constants';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const FONT_SIZE_MARKS = [
   { value: 0, label: '작게' },
@@ -28,6 +30,20 @@ const SettingsPage = () => {
   const { settings, setters } = useAppSettings();
   const { fontSize, listFontSize, fontType, themeKey } = settings;
   const { setFontSize, setListFontSize, setFontType, setThemeKey } = setters;
+  const { showSnackbar } = useSnackbar();
+
+  const handleClearCache = async () => {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      showSnackbar('캐시를 초기화했습니다. 잠시 후 새로고침됩니다.', 'success');
+      setTimeout(() => window.location.reload(), 1200);
+    } catch {
+      showSnackbar('캐시 초기화 중 오류가 발생했습니다.', 'error');
+    }
+  };
 
   const fontSizeIndex     = FONT_SIZE_VALUES.indexOf(fontSize)     === -1 ? 1 : FONT_SIZE_VALUES.indexOf(fontSize);
   const listFontSizeIndex = FONT_SIZE_VALUES.indexOf(listFontSize) === -1 ? 1 : FONT_SIZE_VALUES.indexOf(listFontSize);
@@ -110,7 +126,7 @@ const SettingsPage = () => {
       </Paper>
 
       {/* 테마 */}
-      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <SectionTitle>테마 색상</SectionTitle>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           {Object.keys(THEMES).map(key => (
@@ -140,6 +156,22 @@ const SettingsPage = () => {
             </Box>
           ))}
         </Box>
+      </Paper>
+      {/* 앱 업데이트 */}
+      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+        <SectionTitle>앱 업데이트</SectionTitle>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          새 버전이 적용되지 않을 때 캐시를 초기화하면 최신 버전으로 업데이트돼요.
+          <br />⚠️ 구절 데이터는 삭제되지 않아요.
+        </Typography>
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<SystemUpdateIcon />}
+          onClick={handleClearCache}
+        >
+          캐시 초기화 및 최신 버전으로 업데이트
+        </Button>
       </Paper>
     </Box>
   );

@@ -24,7 +24,12 @@ console.log("3. App 컴포넌트 렌더링 시도");
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://cra.link/PWA
-serviceWorkerRegistration.register();
+serviceWorkerRegistration.register({
+  onUpdate: (registration) => {
+    // 새 버전이 대기 중임을 앱에 알림
+    window.dispatchEvent(new CustomEvent('swUpdateAvailable', { detail: registration }));
+  },
+});
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
