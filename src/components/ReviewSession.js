@@ -107,7 +107,7 @@ const ReviewSession = ({
             if (isBrowsingCompleted) { browsePrev(); }
             else if (reviewView === 'card') { peekPrev(); }
         },
-        onSwipedUp: () => { if (reviewView === 'card' && verse && !isBrowsingCompleted && !isPeeking) { setIsActionBarVisible(true); } },
+        onSwipedUp: () => { if (reviewView === 'card' && verse) { setIsActionBarVisible(true); } },
         preventDefaultTouchmoveEvent: true,
         trackTouch: true,
     });

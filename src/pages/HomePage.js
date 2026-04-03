@@ -122,7 +122,14 @@ const HomePage = () => {
     }
   }, [originalVerses]);
 
-  const handleStatusToggle = (field) => { if (!verse) return; actions.updateVerseInPlace({ [field]: !verse[field] }); };
+  const handleStatusToggle = (field) => {
+    if (!verse) return;
+    if (isBrowsingCompleted || isPeeking) {
+      actions.updateCompletedVerse(verse.id, { [field]: !verse[field] });
+    } else {
+      actions.updateVerseInPlace({ [field]: !verse[field] });
+    }
+  };
 
   if (isLoading || !settingsLoaded) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><Typography>로딩 중...</Typography></Box>;

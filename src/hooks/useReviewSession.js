@@ -175,6 +175,13 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     updateVerseStatus(versesToReview[index].id, updates);
   }, [index, versesToReview, isBrowsingCompleted, updateVerseStatus]);
 
+  const updateCompletedVerse = useCallback((verseId, updates) => {
+    ignoreNextFilterRef.current = true;
+    setSessionCompleted(prev => prev.map(v => v.id === verseId ? { ...v, ...updates } : v));
+    setCompletedInMode(prev => prev.map(v => v.id === verseId ? { ...v, ...updates } : v));
+    updateVerseStatus(verseId, updates);
+  }, [updateVerseStatus]);
+
   const browseNext = useCallback(() => {
     if (browsableCompletedList.length === 0) return;
     setBrowseIndex(prev => (prev + 1) % browsableCompletedList.length);
@@ -319,7 +326,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     isBrowsingCompleted,
     isPeeking,
     isTurnCompleted,
-    actions: { toggleAnswer, handleMarkAsReviewed, updateVerseInPlace, toggleBrowseMode, browseNext, browsePrev, peekPrev, peekNext, exitPeek },
+    actions: { toggleAnswer, handleMarkAsReviewed, updateVerseInPlace, updateCompletedVerse, toggleBrowseMode, browseNext, browsePrev, peekPrev, peekNext, exitPeek },
     resetTurnCompletion,
   };
 };
