@@ -68,7 +68,7 @@ const HomePage = () => {
   const dailyProgress = { todaysGoal, completedToday };
   const handleReviewLogUpdate = () => { loadData(); };
 
-  const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress, handleReviewLogUpdate);
+  const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isPeeking, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress, handleReviewLogUpdate);
   const { isFocusMode, themeKey, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
   const { setIsFocusMode } = setters;
 
@@ -133,7 +133,7 @@ const HomePage = () => {
       {isFocusMode ? (
         <ReviewSession
           settings={settings} setters={setters} verse={verse} verses={verses}
-          isBrowsingCompleted={isBrowsingCompleted} showAnswer={showAnswer} sessionStats={sessionStats}
+          isBrowsingCompleted={isBrowsingCompleted} isPeeking={isPeeking} showAnswer={showAnswer} sessionStats={sessionStats}
           actions={actions} onStatusToggle={handleStatusToggle}
           onTagDialogOpen={() => setTagDialogOpen(true)} currentIndex={index} remainingToday={remainingToday}
           onHelpClick={() => setHelpOpen(true)} tagDialogOpen={tagDialogOpen} helpOpen={helpOpen}

@@ -22,6 +22,9 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
   const [isTurnCompleted, setIsTurnCompleted] = useState(false);
 
+  const [isPeeking, setIsPeeking] = useState(false);
+  const [peekIndex, setPeekIndex] = useState(0);
+
   const ignoreNextFilterRef = useRef(false);
   const todayStr = `${new Date().getFullYear()}. ${new Date().getMonth() + 1}. ${new Date().getDate()}`;
 
@@ -33,6 +36,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     setSessionCompleted([]);
     setIndex(0);
     setIsTurnCompleted(false);
+    setIsPeeking(false);
+    setPeekIndex(0);
   }, [mode, selectedCategories, selectedSubcategories, order, targetTurn, targetTurnForNew, targetTurnForRecent]);
 
   useEffect(() => {
@@ -139,6 +144,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     setShowAnswer(false);
     setIsBrowsingCompleted(false);
     setBrowseIndex(0);
+    setIsPeeking(false);
+    setPeekIndex(0);
 
   }, [mode, selectedCategories, selectedSubcategories, order, originalVerses, targetTurn, targetTurnForNew, targetTurnForRecent, todayStr]);
 
@@ -180,7 +187,35 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     setShowAnswer(false);
   }, [browsableCompletedList.length]);
 
+  const peekPrev = useCallback(() => {
+    if (isBrowsingCompleted || sessionCompleted.length === 0) return;
+    setShowAnswer(false);
+    if (!isPeeking) {
+      setPeekIndex(sessionCompleted.length - 1);
+      setIsPeeking(true);
+    } else {
+      setPeekIndex(prev => Math.max(0, prev - 1));
+    }
+  }, [isBrowsingCompleted, sessionCompleted, isPeeking]);
+
+  const peekNext = useCallback(() => {
+    if (!isPeeking || sessionCompleted.length === 0) return;
+    setShowAnswer(false);
+    if (peekIndex >= sessionCompleted.length - 1) {
+      // 가장 최근 구절에서 오른쪽 → peek 종료, 현재 구절로 복귀
+      setIsPeeking(false);
+    } else {
+      setPeekIndex(prev => prev + 1);
+    }
+  }, [isPeeking, sessionCompleted.length, peekIndex]);
+
+  const exitPeek = useCallback(() => {
+    setIsPeeking(false);
+    setShowAnswer(false);
+  }, []);
+
   const toggleBrowseMode = useCallback(() => {
+      setIsPeeking(false);
       setIsBrowsingCompleted(prev => {
           setShowAnswer(false);
           if (!prev) {
@@ -272,14 +307,19 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   }, [versesToReview, index, mode, isBrowsingCompleted, targetTurn, targetTurnForNew, targetTurnForRecent, updateVerseStatus, showSnackbar, dailyProgress, sessionCompleted]);
 
   return {
-    verse: isBrowsingCompleted ? browsableCompletedList[browseIndex] : versesToReview[index],
+    verse: isPeeking
+      ? sessionCompleted[peekIndex]
+      : isBrowsingCompleted
+        ? browsableCompletedList[browseIndex]
+        : versesToReview[index],
     verses: versesToReview,
     index: isBrowsingCompleted ? browseIndex : index,
     showAnswer,
     sessionStats: { todayCount, reviewedCount, totalTargetCount, sessionCompletedCount: sessionCompleted.length, totalCompletedCount: browsableCompletedList.length },
     isBrowsingCompleted,
+    isPeeking,
     isTurnCompleted,
-    actions: { toggleAnswer, handleMarkAsReviewed, updateVerseInPlace, toggleBrowseMode, browseNext, browsePrev },
+    actions: { toggleAnswer, handleMarkAsReviewed, updateVerseInPlace, toggleBrowseMode, browseNext, browsePrev, peekPrev, peekNext, exitPeek },
     resetTurnCompletion,
   };
 };
