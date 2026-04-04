@@ -40,7 +40,8 @@ function UsageGuide() {
           화면 왼쪽 상단의 햄버거 메뉴(☰)를 통해 앱의 모든 기능에 접근할 수 있습니다.
         </Typography>
         <List dense>
-            <ListItem><ListItemText primary="복습 설정" secondary="카테고리별, 뉴구절, 오답, 차수별 등 9가지의 다양한 복습 모드를 선택하고, 구절 순서(순차, 랜덤 등)를 정할 수 있습니다. 차수별 복습 시에는 목표 차수와 기간 설정도 가능합니다." /></ListItem>
+            <ListItem><ListItemText primary="복습 설정" secondary="카테고리별, 뉴구절, 오답, 차수별 등 다양한 복습 모드를 선택할 수 있습니다. 차수별 복습 시에는 목표 차수와 기간 설정도 가능합니다." /></ListItem>
+            <ListItem><ListItemText primary="정렬 방식" secondary={<>• <b>순차/랜덤/오래된 순/그룹별 랜덤:</b> 구절이 나타나는 순서를 결정합니다.<br />• <b>오답구절만보기:</b> 선택한 모드(카테고리/차수 등) 내에서 '오답'으로 표시된 구절만 모아서 복습할 수 있는 강력한 기능입니다.</>} /></ListItem>
             <ListItem><ListItemText primary="테마 설정" secondary="다양한 색상의 테마 중 하나를 선택하여 암송 카드의 배경을 변경할 수 있습니다." /></ListItem>
             <ListItem><ListItemText primary="페이지 이동" secondary="'홈', '구절 목록', '통계' 등 원하는 페이지로 빠르게 이동할 수 있습니다." /></ListItem>
             <ListItem><ListItemText primary="복습 기록 초기화" secondary="필요에 따라 특정 모드(예: 뉴구절)의 복습 기록만 초기화하거나, 전체 복습 상태를 초기화할 수 있습니다. (주의: 통계 기록은 유지됩니다.)" /></ListItem>

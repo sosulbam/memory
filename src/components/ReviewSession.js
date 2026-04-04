@@ -21,6 +21,15 @@ const HelpDialog = ({ open, onClose }) => {
                     <ListItem><ListItemIcon sx={{ mt: 0.5 }}><ChevronRightIcon fontSize="small" /></ListItemIcon><ListItemText><b>이전 구절 보기:</b> <Highlight>오른쪽으로 스와이프</Highlight> (완료 상태 변동 없음)</ListItemText></ListItem>
                     <ListItem><ListItemIcon sx={{ mt: 0.5 }}><ChevronRightIcon fontSize="small" /></ListItemIcon><ListItemText><b>상태 변경/복사:</b> <Highlight>위로 스와이프</Highlight>하여 메뉴를 열 수 있습니다.</ListItemText></ListItem>
                 </List>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }} gutterBottom>효율적인 복습 팁</Typography>
+                <List dense>
+                    <ListItem>
+                        <ListItemIcon sx={{ mt: 0.5 }}><ChevronRightIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText>
+                            <b>오답만 복습하기:</b> 복습 설정의 [정렬 방식]에서 <Highlight>'오답구절만보기'</Highlight>를 선택하면, 현재 선택된 범위(차수/카테고리) 내에서 틀린 구절만 모아서 복습할 수 있습니다.
+                        </ListItemText>
+                    </ListItem>
+                </List>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mt: 2 }} gutterBottom>키보드 단축키 (PC)</Typography>
                 <List dense>
                     <ListItem>
