@@ -86,6 +86,12 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     const base = mode === 'pending' ? originalVerses.filter(baseFilter[mode]) : activeVerses.filter(baseFilter[mode] || (() => true));
 
     let remainingList = base.filter(v => !completionCheck[mode](v));
+    
+    // --- [수정] 오답구절만보기 필터 적용 ---
+    if (order === 'incorrect_only') {
+      remainingList = remainingList.filter(v => v.오답여부);
+    }
+
     const completedList = base.filter(v => completionCheck[mode](v));
 
     if (mode.startsWith('turnBased') && remainingList.length === 0 && base.length > 0) {

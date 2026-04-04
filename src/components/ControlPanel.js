@@ -149,6 +149,7 @@ const ControlPanel = ({
                 <MenuItem value="random">랜덤</MenuItem>
                 <MenuItem value="oldest_first">오래된 순</MenuItem>
                 <MenuItem value="grouped_random">그룹별 랜덤</MenuItem>
+                <MenuItem value="incorrect_only">오답구절만보기</MenuItem>
               </Select>
             </FormControl>
           </Grid>

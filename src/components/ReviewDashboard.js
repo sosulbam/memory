@@ -21,7 +21,7 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     const { mode, order, selectedCategories, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
     const currentMode = MODES.find(m => m.value === mode);
     const getTurnTarget = () => { if (mode === 'turnBasedReview') return `${targetTurn}차`; if (mode === 'turnBasedNew') return `뉴구절 ${targetTurnForNew}차`; if (mode === 'turnBasedRecent') return `최근 ${targetTurnForRecent}차`; return null; };
-    const orderTextMap = { sequential: '순차', random: '랜덤', oldest_first: '오래된 순', grouped_random: '그룹별 랜덤' };
+    const orderTextMap = { sequential: '순차', random: '랜덤', oldest_first: '오래된 순', grouped_random: '그룹별 랜덤', incorrect_only: '오답만 보기' };
 
     let infoItems = [
         { icon: <InfoOutlinedIcon />, primary: "복습 모드", secondary: currentMode?.label || '알 수 없음' },
