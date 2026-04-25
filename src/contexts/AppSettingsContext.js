@@ -79,8 +79,9 @@ export const AppSettingsProvider = ({ children }) => {
   const handleCategoryChange = (event) => {
     const { target: { value } } = event;
     const newValues = Array.isArray(value) ? value : [value];
-    if (newValues.length === 0 || newValues[newValues.length - 1] === '전체') { setSelectedCategories(['전체']); return; }
+    if (newValues.length === 0 || newValues[newValues.length - 1] === '전체') { setSelectedCategories(['전체']); setSelectedSubcategories(['전체']); return; }
     setSelectedCategories(newValues.filter(item => item !== '전체'));
+    setSelectedSubcategories(['전체']);
   };
 
   const handleSubcategoryChange = (event) => {
