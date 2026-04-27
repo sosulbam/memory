@@ -121,6 +121,40 @@ const ReviewSession = ({
         trackTouch: true,
     });
 
+    // --- 안드로이드 뒤로가기 처리 ---
+    // ref로 최신 상태를 유지 (popstate 핸들러가 재등록되지 않도록)
+    const backHandlerRef = useRef(null);
+    useEffect(() => {
+        backHandlerRef.current = { isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode: setters.setIsFocusMode };
+    });
+
+    useEffect(() => {
+        // 복습 화면 진입 시 가짜 히스토리 1회 추가
+        window.history.pushState({ reviewSession: true }, '');
+
+        const handlePopState = () => {
+            const { isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode } = backHandlerRef.current;
+            if (isActionBarVisible) {
+                setIsActionBarVisible(false);
+            } else if (isPeeking) {
+                exitPeek();
+            } else if (isBrowsingCompleted) {
+                toggleBrowseMode();
+            } else {
+                // 복습 화면 종료 → 홈 대시보드로 (히스토리 재추가 없음)
+                setIsFocusMode(false);
+                return;
+            }
+            // 처리 후 다시 가짜 히스토리 추가 (다음 뒤로가기를 위해)
+            window.history.pushState({ reviewSession: true }, '');
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    // 마운트/언마운트 시 1회만 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // --- [수정됨] 키보드 단축키 핸들러 ---
     useEffect(() => {
         const handleKeyDown = (e) => {
