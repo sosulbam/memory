@@ -1,11 +1,10 @@
 // src/pages/VerseTreePage.js
-// 암송 중인 모든 구절의 구조를 트리 형태로 한눈에 보는 페이지 + 트리 복습 모드.
-// 복습 모드: 차수별(복습/뉴/최근) 대상 구절만 시리즈 구조로 조망하며 복습.
-//  - 대카테고리 → 소카테고리 → 제목·장절 → 본문 아코디언
-//  - 완료 표시(숨김/회색), 오늘 분량/전체, 오늘 분량 진행률, PC 단축키, 상단 고정
-// ⚠️ 공개판: 서버 의존 도구(감사저장·메모·AI주석·다른번역)는 제외하고,
-//    로컬 전용 ActionBar(뉴/오답/최근/즐겨찾기/미암송/태그/복사)만 인라인 제공.
-import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
+// 암송 중인 모든 구절의 구조를 트리 형태로 한눈에 보는 페이지.
+// 복습이 목적이 아니라, 시리즈(대/소카테고리) 구성을 조망하고 학습하기 위한 화면.
+//  - 대카테고리 클릭 → 소카테고리 목록 펼침
+//  - 소카테고리 클릭 → 제목·장절 목록 펼침
+//  - 제목·장절 클릭 → 해당 구절 본문이 카드형태 아코디언으로 열림
+import React, { useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, Paper, Collapse, Chip, Button, Divider, Stack,
   ToggleButton, ToggleButtonGroup, LinearProgress,
@@ -19,6 +18,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SchoolIcon from '@mui/icons-material/School';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import BuildIcon from '@mui/icons-material/Build';
 import { DataContext } from '../contexts/DataContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -39,10 +39,124 @@ const PALETTE = [
 
 const SUB_FALLBACK = '기타';
 
+// 구절 한 줄 + 본문 카드. React.memo로 감싸 프롭이 바뀐 구절만 리렌더 →
+// 긴 구절 목록에서 한 곳을 열어도 전체가 다시 그려지지 않게 한다(성능).
+const VerseRow = React.memo(function VerseRow({
+  verse: v, color, vOpen, done, isTarget, reviewMode, toolsDefault, toolsOpen,
+  turnLabel, onToggleVerse, onToggleTools, onComplete, onStatusToggle, onTagOpen, onCopy,
+}) {
+  return (
+    <Box data-verse-id={v.id} sx={{ opacity: done ? 0.5 : 1 }}>
+      <Box
+        onClick={() => onToggleVerse(v.id)}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          py: 0.9,
+          px: isTarget ? 1 : 0,
+          mx: isTarget ? -1 : 0,
+          borderRadius: 1.5,
+          backgroundColor: isTarget ? `${color}18` : 'transparent',
+          boxShadow: isTarget ? `inset 3px 0 0 ${color}` : 'none',
+          cursor: 'pointer',
+          userSelect: 'none',
+          borderBottom: '1px dashed rgba(0,0,0,0.06)',
+          '&:hover .verse-title': { color: done ? undefined : color },
+        }}
+      >
+        {done ? (
+          <TaskAltIcon sx={{ fontSize: 16, color: 'success.main' }} />
+        ) : (
+          <MenuBookIcon sx={{ fontSize: 16, color: vOpen ? color : 'text.disabled' }} />
+        )}
+        <Typography
+          className="verse-title"
+          sx={{
+            fontWeight: 500,
+            fontSize: '0.95rem',
+            transition: 'color .15s',
+            textDecoration: done ? 'line-through' : 'none',
+          }}
+        >
+          {v.제목}
+        </Typography>
+        <Typography variant="caption" sx={{ ml: 'auto', color: 'text.secondary', flexShrink: 0 }}>
+          {v.장절}
+        </Typography>
+      </Box>
+
+      {/* 본문 카드 (아코디언) */}
+      <Collapse in={vOpen} timeout="auto" unmountOnExit>
+        <Paper
+          elevation={0}
+          sx={{ my: 1, p: 2, borderRadius: 2, backgroundColor: `${color}0D`, border: `1px solid ${color}33` }}
+        >
+          <Typography sx={{ fontWeight: 700, color, fontSize: '0.9rem', mb: 0.25 }}>{v.제목}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>{v.장절}</Typography>
+          <Divider sx={{ my: 1, borderColor: `${color}33` }} />
+          <Typography sx={{ lineHeight: 1.8, whiteSpace: 'pre-line', wordBreak: 'keep-all', color: 'text.primary' }}>
+            {v.본문}
+          </Typography>
+          <Typography align="right" sx={{ mt: 1.25, color, fontWeight: 700, fontSize: '0.85rem' }}>
+            {v.장절}
+          </Typography>
+
+          {/* 구절 처리 툴 */}
+          <Divider sx={{ my: 1, borderColor: `${color}33` }} />
+          {toolsDefault === 'shown' ? (
+            <ActionBar
+              verse={v}
+              onStatusToggle={(field) => onStatusToggle(v, field)}
+              onTagDialogOpen={() => onTagOpen(v)}
+              onCopy={() => onCopy(v)}
+            />
+          ) : (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<BuildIcon />}
+                onClick={(e) => { e.stopPropagation(); onToggleTools(v.id); }}
+                sx={{ mt: 0.5 }}
+              >
+                {toolsOpen ? '도구 숨기기' : '도구 열기'}
+              </Button>
+              <Collapse in={toolsOpen} timeout="auto" unmountOnExit>
+                <ActionBar
+              verse={v}
+              onStatusToggle={(field) => onStatusToggle(v, field)}
+              onTagDialogOpen={() => onTagOpen(v)}
+              onCopy={() => onCopy(v)}
+            />
+              </Collapse>
+            </>
+          )}
+
+          {reviewMode && !done && (
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<CheckCircleIcon />}
+              onClick={(e) => { e.stopPropagation(); onComplete(v); }}
+              sx={{ mt: 1, bgcolor: color, '&:hover': { bgcolor: color, filter: 'brightness(0.92)' } }}
+            >
+              {turnLabel} 복습 완료
+            </Button>
+          )}
+        </Paper>
+      </Collapse>
+    </Box>
+  );
+});
+
 const VerseTreePage = () => {
   const { originalVerses, updateVerseStatus, turnScheduleData, tagsData, updateTags } = useContext(DataContext);
   const { settings } = useAppSettings();
   const { showSnackbar } = useSnackbar();
+
+  // 태그 편집 다이얼로그 대상 구절 (공개판은 페이지 단위 1개)
+  const [tagVerse, setTagVerse] = useState(null);
 
   // 저장된 트리 복습 설정 불러오기 (완료 표시 방식·분량·모드 유지)
   const savedPrefs = useMemo(() => loadDataFromLocal(VERSETREE_PREFS_KEY) || {}, []);
@@ -65,13 +179,21 @@ const VerseTreePage = () => {
   const [dailyLimit, setDailyLimit] = useState(
     savedPrefs.dailyLimit !== undefined ? savedPrefs.dailyLimit : true
   );
-  // 태그 다이얼로그 대상 구절
-  const [tagVerse, setTagVerse] = useState(null);
+  // 카드 내 도구 버튼 기본 노출: 'hidden'(숨김, 개별 열기) / 'shown'(항상 표시)
+  const [toolsDefault, setToolsDefault] = useState(
+    savedPrefs.toolsDefault === 'shown' ? 'shown' : 'hidden'
+  );
+  // toolsDefault='hidden'일 때 개별 카드에서 도구를 펼친 구절 집합
+  const [openTools, setOpenTools] = useState(() => new Set());
+
+  // 자동 스크롤용: 예약 플래그 + 현재 '맨 위' 대상 구절 id 참조
+  const pendingScrollRef = useRef(false);
+  const targetVerseIdRef = useRef(null);
 
   // 설정 변경 시 저장 (다음 방문에도 유지)
   useEffect(() => {
-    saveDataToLocal(VERSETREE_PREFS_KEY, { completedDisplay, dailyLimit, treeMode });
-  }, [completedDisplay, dailyLimit, treeMode]);
+    saveDataToLocal(VERSETREE_PREFS_KEY, { completedDisplay, dailyLimit, treeMode, toolsDefault });
+  }, [completedDisplay, dailyLimit, treeMode, toolsDefault]);
 
   // 복습 모드에서 실제 노출할 구절/카운트 (옵션 반영)
   const reviewData = useMemo(
@@ -176,8 +298,12 @@ const VerseTreePage = () => {
   const toggleReviewMode = useCallback(() => {
     setReviewMode((prev) => {
       const next = !prev;
-      if (next) applyExpand(reviewData.verses);
-      else collapseAll();
+      if (next) {
+        applyExpand(reviewData.verses);
+        pendingScrollRef.current = true; // 복습 모드 진입 시 대상 구절로 스크롤 예약
+      } else {
+        collapseAll();
+      }
       return next;
     });
   }, [collapseAll, applyExpand, reviewData.verses]);
@@ -197,10 +323,13 @@ const VerseTreePage = () => {
     updateVerseStatus(verse.id, { [field]: !verse[field] });
   }, [updateVerseStatus]);
 
-  // 구절 복사
+  // VerseRow에 넘길 안정적인 콜백 (id 기반) — memo가 유지되도록 참조 고정
+  const handleToggleVerse = useCallback((id) => toggle(setOpenVerses, id), [toggle]);
+  const handleToggleTools = useCallback((id) => toggle(setOpenTools, id), [toggle]);
+  const handleTagOpen = useCallback((verse) => setTagVerse(verse), []);
   const handleCopy = useCallback((verse) => {
-    const textToCopy = `${verse.장절}\n${verse.본문}`;
-    navigator.clipboard.writeText(textToCopy).then(() => showSnackbar('구절이 복사되었습니다.', 'info'));
+    const text = `${verse.장절}\n${verse.본문}`;
+    navigator.clipboard.writeText(text).then(() => showSnackbar('구절이 복사되었습니다.', 'info'));
   }, [showSnackbar]);
 
   // 트리에서의 "복습 완료" — 홈과 동일하게 차수 상태 갱신 + 복습 로그 기록
@@ -213,6 +342,8 @@ const VerseTreePage = () => {
       nextSet.delete(verse.id);
       return nextSet;
     });
+    // 현재 '맨 위' 대상 구절을 완료했을 때만 다음 구절로 스크롤 예약
+    if (verse.id === targetVerseIdRef.current) pendingScrollRef.current = true;
     showSnackbar(
       `'${verse.제목}' ${getTurnTargetLabel(treeMode, settings)} 복습 완료`,
       'success'
@@ -221,6 +352,7 @@ const VerseTreePage = () => {
 
   const currentModeLabel =
     TURN_BASED_MODES.find((m) => m.value === treeMode)?.label || '';
+  const turnLabel = getTurnTargetLabel(treeMode, settings);
 
   // 키보드 단축키 대상 = 아직 완료하지 않은 '가장 위' 구절 (트리 표시 순서 기준)
   const targetInfo = useMemo(() => {
@@ -237,6 +369,7 @@ const VerseTreePage = () => {
     return null;
   }, [reviewMode, tree]);
   const targetVerseId = targetInfo?.verse.id;
+  useEffect(() => { targetVerseIdRef.current = targetVerseId; }, [targetVerseId]);
 
   // PC 단축키: Space/./s = 대상 구절 본문 열기, Enter = 대상 구절 복습 완료
   useEffect(() => {
@@ -263,6 +396,25 @@ const VerseTreePage = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [reviewMode, targetInfo, toggle, handleComplete]);
 
+  // 대상 구절이 화면 '정중앙'에 오도록 스크롤 (복습 모드 진입 시 / 완료 직후에만).
+  // scrollIntoView({block:'center'})는 일부 브라우저에서 무시되어 최상단으로 붙는 문제가
+  // 있어, 위치를 직접 계산해 window.scrollTo로 중앙 정렬한다.
+  // 진입 시 여러 아코디언이 동시에 펼쳐지므로, 애니메이션이 어느 정도 정착한 뒤 측정한다.
+  useEffect(() => {
+    if (!pendingScrollRef.current) return;
+    pendingScrollRef.current = false;
+    if (!targetVerseId) return;
+    const timer = setTimeout(() => {
+      const el = document.querySelector(`[data-verse-id="${CSS.escape(String(targetVerseId))}"]`);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const elementCenter = rect.top + window.scrollY + rect.height / 2;
+      const targetY = elementCenter - window.innerHeight / 2;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [targetVerseId]);
+
   // 데이터 자체가 없을 때만 전체 빈 화면 (복습 모드에서 대상이 없는 경우는 본문에서 안내)
   if (!originalVerses || !originalVerses.length) {
     return (
@@ -281,8 +433,8 @@ const VerseTreePage = () => {
           position: 'sticky',
           top: 57,
           zIndex: 900,
-          backgroundColor: 'rgba(255,255,255,0.94)',
-          backdropFilter: 'blur(8px)',
+          // 불투명 배경 사용 (backdrop-filter blur는 스크롤마다 재페인트되어 굼뜸)
+          backgroundColor: '#fff',
           mx: { xs: -1.5, sm: -3 },
           px: { xs: 1.5, sm: 3 },
           pt: 1.5,
@@ -419,18 +571,38 @@ const VerseTreePage = () => {
           (표시된 <span style={{ color: '#5C6BC0' }}>맨 위 구절</span>부터 하나씩)
         </Typography>
       )}
+      {/* 도구 버튼 기본 노출 + 전체 펼치기/접기 (고정 바 안) */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        gap={1}
+        sx={{ mt: 0.5 }}
+      >
+        <Stack direction="row" alignItems="center" spacing={0.75}>
+          <Typography variant="caption" color="text.secondary">도구 버튼</Typography>
+          <ToggleButtonGroup
+            value={toolsDefault}
+            exclusive
+            size="small"
+            onChange={(_e, val) => { if (val !== null) setToolsDefault(val); }}
+          >
+            <ToggleButton value="hidden" sx={{ px: 1.5, py: 0.4 }}>숨김</ToggleButton>
+            <ToggleButton value="shown" sx={{ px: 1.5, py: 0.4 }}>표시</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <Button size="small" startIcon={<UnfoldMoreIcon />} onClick={expandAll}>
+            모두 펼치기
+          </Button>
+          <Button size="small" startIcon={<UnfoldLessIcon />} onClick={collapseAll}>
+            모두 접기
+          </Button>
+        </Stack>
+      </Stack>
       </Box>
       {/* 고정 컨트롤 끝 */}
-
-      {/* 전체 펼치기/접기 */}
-      <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ mb: 2 }}>
-        <Button size="small" startIcon={<UnfoldMoreIcon />} onClick={expandAll}>
-          모두 펼치기
-        </Button>
-        <Button size="small" startIcon={<UnfoldLessIcon />} onClick={collapseAll}>
-          모두 접기
-        </Button>
-      </Stack>
 
       {/* 복습 모드에서 대상 구절이 없을 때 */}
       {reviewMode && !tree.length && (
@@ -546,132 +718,26 @@ const VerseTreePage = () => {
                         {/* 제목 · 장절 목록 */}
                         <Collapse in={subOpen} timeout="auto" unmountOnExit>
                           <Box sx={{ pl: 3.5, pr: 0.5, pt: 0.5 }}>
-                            {sub.verses.map((v) => {
-                              const vOpen = openVerses.has(v.id);
-                              const done = !!v._completed;
-                              const isTarget = reviewMode && v.id === targetVerseId;
-                              return (
-                                <Box key={v.id} sx={{ opacity: done ? 0.5 : 1 }}>
-                                  <Box
-                                    onClick={() => toggle(setOpenVerses, v.id)}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 1,
-                                      py: 0.9,
-                                      px: isTarget ? 1 : 0,
-                                      mx: isTarget ? -1 : 0,
-                                      borderRadius: 1.5,
-                                      backgroundColor: isTarget ? `${color}18` : 'transparent',
-                                      boxShadow: isTarget ? `inset 3px 0 0 ${color}` : 'none',
-                                      cursor: 'pointer',
-                                      userSelect: 'none',
-                                      borderBottom: '1px dashed rgba(0,0,0,0.06)',
-                                      '&:hover .verse-title': { color: done ? undefined : color },
-                                    }}
-                                  >
-                                    {done ? (
-                                      <TaskAltIcon sx={{ fontSize: 16, color: 'success.main' }} />
-                                    ) : (
-                                      <MenuBookIcon
-                                        sx={{
-                                          fontSize: 16,
-                                          color: vOpen ? color : 'text.disabled',
-                                        }}
-                                      />
-                                    )}
-                                    <Typography
-                                      className="verse-title"
-                                      sx={{
-                                        fontWeight: 500,
-                                        fontSize: '0.95rem',
-                                        transition: 'color .15s',
-                                        textDecoration: done ? 'line-through' : 'none',
-                                      }}
-                                    >
-                                      {v.제목}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      sx={{ ml: 'auto', color: 'text.secondary', flexShrink: 0 }}
-                                    >
-                                      {v.장절}
-                                    </Typography>
-                                  </Box>
-
-                                  {/* 본문 카드 (아코디언) */}
-                                  <Collapse in={vOpen} timeout="auto" unmountOnExit>
-                                    <Paper
-                                      elevation={0}
-                                      sx={{
-                                        my: 1,
-                                        p: 2,
-                                        borderRadius: 2,
-                                        backgroundColor: `${color}0D`,
-                                        border: `1px solid ${color}33`,
-                                      }}
-                                    >
-                                      <Typography
-                                        sx={{ fontWeight: 700, color, fontSize: '0.9rem', mb: 0.25 }}
-                                      >
-                                        {v.제목}
-                                      </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        sx={{ color: 'text.secondary', fontWeight: 600 }}
-                                      >
-                                        {v.장절}
-                                      </Typography>
-                                      <Divider sx={{ my: 1, borderColor: `${color}33` }} />
-                                      <Typography
-                                        sx={{
-                                          lineHeight: 1.8,
-                                          whiteSpace: 'pre-line',
-                                          wordBreak: 'keep-all',
-                                          color: 'text.primary',
-                                        }}
-                                      >
-                                        {v.본문}
-                                      </Typography>
-                                      <Typography
-                                        align="right"
-                                        sx={{ mt: 1.25, color, fontWeight: 700, fontSize: '0.85rem' }}
-                                      >
-                                        {v.장절}
-                                      </Typography>
-
-                                      {/* 구절 처리 툴(뉴/오답/최근/즐겨찾기/미암송/태그/복사) */}
-                                      <Divider sx={{ my: 1, borderColor: `${color}33` }} />
-                                      <ActionBar
-                                        verse={v}
-                                        onStatusToggle={(field) => handleStatusToggle(v, field)}
-                                        onTagDialogOpen={() => setTagVerse(v)}
-                                        onCopy={() => handleCopy(v)}
-                                      />
-
-                                      {reviewMode && !done && (
-                                        <Button
-                                          fullWidth
-                                          variant="contained"
-                                          startIcon={<CheckCircleIcon />}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleComplete(v);
-                                          }}
-                                          sx={{
-                                            mt: 1,
-                                            bgcolor: color,
-                                            '&:hover': { bgcolor: color, filter: 'brightness(0.92)' },
-                                          }}
-                                        >
-                                          {getTurnTargetLabel(treeMode, settings)} 복습 완료
-                                        </Button>
-                                      )}
-                                    </Paper>
-                                  </Collapse>
-                                </Box>
-                              );
-                            })}
+                            {sub.verses.map((v) => (
+                              <VerseRow
+                                key={v.id}
+                                verse={v}
+                                color={color}
+                                vOpen={openVerses.has(v.id)}
+                                done={!!v._completed}
+                                isTarget={reviewMode && v.id === targetVerseId}
+                                reviewMode={reviewMode}
+                                toolsDefault={toolsDefault}
+                                toolsOpen={openTools.has(v.id)}
+                                turnLabel={turnLabel}
+                                onToggleVerse={handleToggleVerse}
+                                onToggleTools={handleToggleTools}
+                                onComplete={handleComplete}
+                                onStatusToggle={handleStatusToggle}
+                                onTagOpen={handleTagOpen}
+                                onCopy={handleCopy}
+                              />
+                            ))}
                           </Box>
                         </Collapse>
                       </Box>
