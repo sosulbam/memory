@@ -14,6 +14,7 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import StyleIcon from '@mui/icons-material/Style';
 import ConstructionIcon from '@mui/icons-material/Construction';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -107,6 +108,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
   const menuItems = [
     { text: '홈', icon: <HomeIcon />, path: '/' },
     { text: '구절 목록', icon: <ViewListIcon />, path: '/list' },
+    { text: '구절 구조 보기', icon: <AccountTreeIcon />, path: '/tree' },
     { text: '구절 관리', icon: <ConstructionIcon />, path: '/manage' },
     { text: '태그 관리', icon: <StyleIcon />, path: '/tags' },
     { text: '암송 시험', icon: <AssignmentIcon />, path: '/test' },

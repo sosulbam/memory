@@ -31,6 +31,7 @@ export const CACHED_VERSES_KEY = 'recitation-app-cached-verses';
 export const THEME_PREFERENCE_KEY = 'recitation-app-theme';
 export const LAST_APP_STATE_KEY = 'recitation-app-last-app-state';
 export const VERSELIST_STATE_KEY = 'recitation-app-verselist-state';
+export const VERSETREE_PREFS_KEY = 'recitation-app-versetree-prefs';
 
 export const THEMES = {
   green: 'linear-gradient(135deg, #71b280, #acd89d)',

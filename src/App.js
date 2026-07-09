@@ -24,6 +24,7 @@ import UsageGuide from './pages/UsageGuide';
 import ReviewLogPage from './pages/ReviewLogPage';
 import RecitationTestPage from './pages/RecitationTestPage';
 import SettingsPage from './pages/SettingsPage';
+import VerseTreePage from './pages/VerseTreePage';
 
 import './App.css';
 
@@ -37,6 +38,7 @@ const pageTitles = {
   '/log': '📅 복습 로그',
   '/test': '📝 암송 시험',
   '/settings': '⚙️ 설정',
+  '/tree': '🌳 구절 구조 보기',
 };
 
 // AppLayout: 모든 페이지에 공통 UI 적용
@@ -165,6 +167,7 @@ function App() {
                 <Route path="/log" element={<ReviewLogPage />} />
                 <Route path="/test" element={<RecitationTestPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/tree" element={<VerseTreePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
