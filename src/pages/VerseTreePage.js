@@ -244,7 +244,8 @@ const VerseTreePage = () => {
     const handler = (e) => {
       const ae = document.activeElement;
       const tag = ae?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || ae?.isContentEditable) return;
+      // 버튼/입력 포커스 시엔 무시 (Space/Enter가 포커스된 버튼과 이중 발동하는 것 방지)
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || ae?.isContentEditable) return;
       if (document.querySelector('.MuiDialog-container')) return; // 다이얼로그 열림 시 무시
       if (!targetInfo) return;
       const { verse, catName, subKey } = targetInfo;

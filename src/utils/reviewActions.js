@@ -7,11 +7,14 @@
 import { saveDataToLocal, loadDataFromLocal } from '../api/localStorageApi';
 import { REVIEW_LOG_KEY } from '../constants';
 import { getKSTDateString } from './dateUtils';
+import { getReviewDateStr } from './reviewScope';
 
 // 모드에 맞는 상태 업데이트 객체 생성 (updateVerseStatus에 그대로 전달)
 export const buildReviewUpdates = (verse, mode, turns = {}) => {
   const { targetTurn = 1, targetTurnForNew = 1, targetTurnForRecent = 1 } = turns;
-  const updates = { 복습날짜: getKSTDateString(), 미암송여부: false };
+  // ⚠️ 복습날짜는 홈(useReviewSession)과 동일한 "YYYY. M. D"(로컬) 형식이어야
+  //    통계/정렬/오늘 완료 비교가 일치한다. (REVIEW_LOG 키만 getKSTDateString 사용)
+  const updates = { 복습날짜: getReviewDateStr(), 미암송여부: false };
 
   switch (mode) {
     case 'category':
