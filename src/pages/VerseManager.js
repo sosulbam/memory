@@ -99,6 +99,7 @@ function VerseManager() {
   const [currentTagInput, setCurrentTagInput] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadMode, setUploadMode] = useState('append'); // 'append' | 'replace'
   const [selectedBackupFile, setSelectedBackupFile] = useState(null);
   const [selectedAudioPackFile, setSelectedAudioPackFile] = useState(null);
 
@@ -532,7 +533,15 @@ function VerseManager() {
 
   const handleUpload = () => {
     if (!selectedFile) { showSnackbar('업로드할 파일을 선택해주세요.', 'warning'); return; }
-    if (!window.confirm('엑셀 파일을 업로드합니다. ID가 동일한 구절은 건너뜁니다.')) return;
+
+    const isReplace = uploadMode === 'replace';
+    const isUpdate = uploadMode === 'update';
+    const confirmMsg = isReplace
+      ? `⚠️ 전체 교체: 현재 등록된 ${originalVerses.length}개 구절과 태그·복습 진행상황(차수/기록/통계)이 모두 삭제되고, 엑셀 파일의 내용으로 완전히 교체됩니다.\n\n(복원이 필요할 수 있으니 먼저 "전체 백업"을 권장합니다.)\n\n계속하시겠습니까?`
+      : isUpdate
+        ? 'ID가 동일한 구절은 엑셀 내용으로 덮어쓰고, 없는 구절은 새로 추가합니다. 복습 진행상황은 그대로 유지됩니다. 진행할까요?'
+        : '엑셀 파일을 업로드합니다. ID가 동일한 구절은 건너뜁니다.';
+    if (!window.confirm(confirmMsg)) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -546,27 +555,103 @@ function VerseManager() {
         if (newVersesData.length === 0) { showSnackbar('데이터가 없습니다.', 'warning'); return; }
 
         setIsSaving(true);
-        const updatedVerses = [...originalVerses];
-        const updatedTags = { ...tagsData };
-        const existingVerseIds = new Set(updatedVerses.map(v => v.id));
-        let addedCount = 0;
 
-        newVersesData.forEach((row) => {
-          const { 태그, ...verseData } = row;
-          if (!verseData.장절 || !verseData.본문) return;
-          if (verseData.id && existingVerseIds.has(verseData.id)) return;
+        if (isReplace) {
+          // --- 전체 교체: 기존 구절/태그를 버리고 엑셀 내용으로 새로 구성 ---
+          const replacedVerses = [];
+          const replacedTags = {};
+          const usedIds = new Set();
 
-          const newId = verseData.id || generateId();
-          updatedVerses.push({ ...verseData, id: newId, 번호: String(originalVerses.length + addedCount + 1) });
-          existingVerseIds.add(newId);
-          addedCount++;
-          if (태그 && typeof 태그 === 'string') updatedTags[newId] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
-        });
+          newVersesData.forEach((row) => {
+            const { 태그, ...verseData } = row;
+            if (!verseData.장절 || !verseData.본문) return;
 
-        saveDataToLocal(VERSES_DATA_KEY, updatedVerses);
-        saveDataToLocal(TAGS_DATA_KEY, updatedTags);
-        await loadData();
-        showSnackbar(`${addedCount}개 추가됨`, 'success');
+            let newId = verseData.id || generateId();
+            while (usedIds.has(newId)) newId = generateId(); // 엑셀 내 ID 중복 방지
+            usedIds.add(newId);
+
+            replacedVerses.push({ ...verseData, id: newId, 번호: String(replacedVerses.length + 1) });
+            if (태그 && typeof 태그 === 'string') {
+              replacedTags[newId] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
+            }
+          });
+
+          if (replacedVerses.length === 0) {
+            showSnackbar('유효한 구절이 없습니다. (장절·본문 필수)', 'warning');
+            setIsSaving(false);
+            return;
+          }
+
+          // 비우지 않고 곧바로 새 데이터로 덮어써 기본 씨앗(/data/verses.json) 재유입을 방지
+          saveDataToLocal(VERSES_DATA_KEY, replacedVerses);
+          saveDataToLocal(TAGS_DATA_KEY, replacedTags);
+          // 복습 진행상황 전부 초기화 (id가 바뀌어 기존 기록은 고아가 됨)
+          saveDataToLocal(REVIEW_STATUS_KEY, {});
+          saveDataToLocal(REVIEW_LOG_KEY, {});
+          saveDataToLocal(TURN_SCHEDULE_KEY, {});
+
+          await loadData();
+          showSnackbar(`전체 교체 완료: ${replacedVerses.length}개 구절로 교체되었습니다.`, 'success');
+        } else if (isUpdate) {
+          // --- 업데이트(ID 덮어쓰기): 일치하는 ID는 채워진 열만 병합, 없으면 새로 추가(upsert) ---
+          const updatedVerses = [...originalVerses];
+          const updatedTags = { ...tagsData };
+          const idToIndex = new Map(updatedVerses.map((v, i) => [v.id, i]));
+          let addedCount = 0;
+          let updatedCount = 0;
+
+          newVersesData.forEach((row) => {
+            const { 태그, ...verseData } = row;
+            if (!verseData.장절 || !verseData.본문) return;
+
+            if (verseData.id && idToIndex.has(verseData.id)) {
+              const idx = idToIndex.get(verseData.id);
+              updatedVerses[idx] = { ...updatedVerses[idx], ...verseData };
+              if (태그 !== undefined && typeof 태그 === 'string') {
+                updatedTags[verseData.id] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
+              }
+              updatedCount++;
+              return;
+            }
+
+            const newId = verseData.id || generateId();
+            updatedVerses.push({ ...verseData, id: newId, 번호: String(originalVerses.length + addedCount + 1) });
+            idToIndex.set(newId, updatedVerses.length - 1);
+            addedCount++;
+            if (태그 && typeof 태그 === 'string') updatedTags[newId] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
+          });
+
+          saveDataToLocal(VERSES_DATA_KEY, updatedVerses);
+          saveDataToLocal(TAGS_DATA_KEY, updatedTags);
+          await loadData();
+          const parts = [];
+          if (updatedCount) parts.push(`${updatedCount}개 수정`);
+          if (addedCount) parts.push(`${addedCount}개 추가`);
+          showSnackbar(parts.length ? parts.join(', ') + '됨' : '변경사항 없음', 'success');
+        } else {
+          // --- 추가(병합): 기존 유지, ID 중복은 건너뜀 ---
+          const updatedVerses = [...originalVerses];
+          const updatedTags = { ...tagsData };
+          const existingVerseIds = new Set(updatedVerses.map(v => v.id));
+          let addedCount = 0;
+
+          newVersesData.forEach((row) => {
+            const { 태그, ...verseData } = row;
+            if (!verseData.장절 || !verseData.본문) return;
+            if (verseData.id && existingVerseIds.has(verseData.id)) return;
+
+            const newId = verseData.id || generateId();
+            updatedVerses.push({ ...verseData, id: newId, 번호: String(originalVerses.length + addedCount + 1) });
+            existingVerseIds.add(newId);
+            addedCount++;
+            if (태그 && typeof 태그 === 'string') updatedTags[newId] = [...new Set(태그.split(',').map(t => t.trim()).filter(Boolean))];
+          });
+
+          saveDataToLocal(VERSES_DATA_KEY, updatedVerses);
+          saveDataToLocal(TAGS_DATA_KEY, updatedTags);
+          await loadData();
+          showSnackbar(`${addedCount}개 추가됨`, 'success');
+        }
 
       } catch (error) { showSnackbar('오류 발생', 'error'); }
       finally { setIsSaving(false); setSelectedFile(null); }
@@ -644,12 +729,39 @@ function VerseManager() {
         <Grid container spacing={2}>
           <Grid item xs={12} md={5}>
             <Typography variant="subtitle2" gutterBottom>엑셀 구절 관리</Typography>
+            <ToggleButtonGroup
+              value={uploadMode}
+              exclusive
+              size="small"
+              onChange={(e, val) => val && setUploadMode(val)}
+              sx={{ mb: 1 }}
+              aria-label="엑셀 업로드 방식"
+            >
+              <ToggleButton value="append" aria-label="추가">추가(병합)</ToggleButton>
+              <ToggleButton value="update" aria-label="업데이트">업데이트</ToggleButton>
+              <ToggleButton value="replace" aria-label="전체 교체" sx={{ color: 'error.main' }}>전체 교체</ToggleButton>
+            </ToggleButtonGroup>
+            <Typography variant="caption" display="block" color={uploadMode === 'replace' ? 'error.main' : 'text.secondary'} sx={{ mb: 1 }}>
+              {uploadMode === 'replace'
+                ? '기존 구절·태그·복습기록을 모두 지우고 엑셀로 교체합니다.'
+                : uploadMode === 'update'
+                  ? 'ID가 같은 구절은 엑셀 내용으로 덮어쓰고, 없으면 새로 추가합니다. (복습기록 유지)'
+                  : 'ID가 동일한 구절은 건너뛰고 새 구절만 추가합니다.'}
+            </Typography>
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
               <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} size="small">
                 {selectedFile ? selectedFile.name : '엑셀 파일 선택'}
                 <Input type="file" accept=".xlsx, .xls" hidden onChange={handleFileSelect} />
               </Button>
-              <Button variant="contained" onClick={handleUpload} disabled={!selectedFile || isSaving} size="small">업로드</Button>
+              <Button
+                variant="contained"
+                color={uploadMode === 'replace' ? 'error' : 'primary'}
+                onClick={handleUpload}
+                disabled={!selectedFile || isSaving}
+                size="small"
+              >
+                {uploadMode === 'replace' ? '전체 교체 업로드' : '업로드'}
+              </Button>
             </Stack>
             <Stack direction="row" spacing={1}>
               <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleTemplateDownload} size="small">템플릿</Button>
