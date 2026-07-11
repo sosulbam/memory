@@ -7,7 +7,7 @@
 import React, { useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, Paper, Collapse, Chip, Button, Divider, Stack,
-  ToggleButton, ToggleButtonGroup, LinearProgress,
+  ToggleButton, ToggleButtonGroup, LinearProgress, IconButton,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -19,6 +19,9 @@ import SchoolIcon from '@mui/icons-material/School';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import BuildIcon from '@mui/icons-material/Build';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { DataContext } from '../contexts/DataContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -186,14 +189,21 @@ const VerseTreePage = () => {
   // toolsDefault='hidden'일 때 개별 카드에서 도구를 펼친 구절 집합
   const [openTools, setOpenTools] = useState(() => new Set());
 
+  // 대카테고리 사용자 지정 순서(이름 배열). 비어있으면 번호순 자연 순서.
+  const [catOrderPref, setCatOrderPref] = useState(
+    () => (Array.isArray(savedPrefs.catOrder) ? savedPrefs.catOrder : [])
+  );
+  // 순서 편집 모드(대카테고리 헤더에 ▲▼ 노출). 저장하지 않음.
+  const [orderEditMode, setOrderEditMode] = useState(false);
+
   // 자동 스크롤용: 예약 플래그 + 현재 '맨 위' 대상 구절 id 참조
   const pendingScrollRef = useRef(false);
   const targetVerseIdRef = useRef(null);
 
   // 설정 변경 시 저장 (다음 방문에도 유지)
   useEffect(() => {
-    saveDataToLocal(VERSETREE_PREFS_KEY, { completedDisplay, dailyLimit, treeMode, toolsDefault });
-  }, [completedDisplay, dailyLimit, treeMode, toolsDefault]);
+    saveDataToLocal(VERSETREE_PREFS_KEY, { completedDisplay, dailyLimit, treeMode, toolsDefault, catOrder: catOrderPref });
+  }, [completedDisplay, dailyLimit, treeMode, toolsDefault, catOrderPref]);
 
   // 복습 모드에서 실제 노출할 구절/카운트 (옵션 반영)
   const reviewData = useMemo(
@@ -236,7 +246,17 @@ const VerseTreePage = () => {
       }
       catNode.subMap.get(sub).verses.push(v);
     });
-    return catOrder.map((cat) => {
+    // 사용자 지정 순서 반영: 지정된 카테고리를 앞에, 미지정은 자연(번호) 순서로 뒤에
+    let orderedCats = catOrder;
+    if (catOrderPref && catOrderPref.length) {
+      const rank = new Map(catOrderPref.map((n, i) => [n, i]));
+      orderedCats = [...catOrder].sort((a, b) => {
+        const ra = rank.has(a) ? rank.get(a) : Infinity;
+        const rb = rank.has(b) ? rank.get(b) : Infinity;
+        return ra - rb;
+      });
+    }
+    return orderedCats.map((cat) => {
       const c = catMap.get(cat);
       return {
         name: c.name,
@@ -244,7 +264,7 @@ const VerseTreePage = () => {
         subs: c.subOrder.map((s) => c.subMap.get(s)),
       };
     });
-  }, [sourceVerses]);
+  }, [sourceVerses, catOrderPref]);
 
   const totalVerses = useMemo(
     () => tree.reduce((sum, c) => sum + c.count, 0),
@@ -299,6 +319,7 @@ const VerseTreePage = () => {
     setReviewMode((prev) => {
       const next = !prev;
       if (next) {
+        setOrderEditMode(false); // 복습 모드에선 순서 편집 종료
         applyExpand(reviewData.verses);
         pendingScrollRef.current = true; // 복습 모드 진입 시 대상 구절로 스크롤 예약
       } else {
@@ -307,6 +328,17 @@ const VerseTreePage = () => {
       return next;
     });
   }, [collapseAll, applyExpand, reviewData.verses]);
+
+  // 대카테고리 순서 이동 (현재 표시 순서를 기준으로 전체 명시 순서를 저장)
+  const moveCat = useCallback((name, dir) => {
+    const names = tree.map((c) => c.name);
+    const i = names.indexOf(name);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= names.length) return;
+    const next = [...names];
+    [next[i], next[j]] = [next[j], next[i]];
+    setCatOrderPref(next);
+  }, [tree]);
 
   const handleTreeModeChange = useCallback((_e, newMode) => {
     if (newMode !== null && newMode !== treeMode) {
@@ -592,7 +624,22 @@ const VerseTreePage = () => {
             <ToggleButton value="shown" sx={{ px: 1.5, py: 0.4 }}>표시</ToggleButton>
           </ToggleButtonGroup>
         </Stack>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {!reviewMode && (
+            <Button
+              size="small"
+              startIcon={<SwapVertIcon />}
+              variant={orderEditMode ? 'contained' : 'text'}
+              onClick={() => setOrderEditMode((v) => !v)}
+            >
+              {orderEditMode ? '순서 편집 완료' : '순서 편집'}
+            </Button>
+          )}
+          {orderEditMode && catOrderPref.length > 0 && (
+            <Button size="small" color="secondary" onClick={() => setCatOrderPref([])}>
+              순서 초기화
+            </Button>
+          )}
           <Button size="small" startIcon={<UnfoldMoreIcon />} onClick={expandAll}>
             모두 펼치기
           </Button>
@@ -668,6 +715,26 @@ const VerseTreePage = () => {
                 <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', flexGrow: 1 }}>
                   {cat.name}
                 </Typography>
+                {orderEditMode && (
+                  <Stack direction="row" spacing={0.25} onClick={(e) => e.stopPropagation()}>
+                    <IconButton
+                      size="small"
+                      disabled={i === 0}
+                      onClick={() => moveCat(cat.name, -1)}
+                      aria-label="위로"
+                    >
+                      <ArrowUpwardIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      disabled={i === tree.length - 1}
+                      onClick={() => moveCat(cat.name, 1)}
+                      aria-label="아래로"
+                    >
+                      <ArrowDownwardIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                )}
                 <Chip
                   label={`${cat.count}`}
                   size="small"
