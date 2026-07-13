@@ -101,9 +101,12 @@ export const useVerseData = () => {
     [tagsData]
   );
 
+  // options.verseIds: 지정 시 해당 구절만 리셋 (카테고리 자동 리셋용 — 선택 범위 밖 구절 보존)
+  // options.skipLog: 오늘 통계 기록을 건드리지 않음 (자동 리셋은 실제 복습 실적이므로 유지)
   const resetReviewStatus = useCallback(
-    (type, showSnackbar) => {
+    (type, showSnackbar, options = {}) => {
       if (!showSnackbar) { console.error("showSnackbar function is not provided."); alert("오류가 발생했습니다."); return; }
+      const { verseIds = null, skipLog = false } = options;
 
       if (type === 'reviewLog') {
         if (window.confirm('정말로 모든 통계 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
@@ -128,7 +131,7 @@ export const useVerseData = () => {
       const logCategoryToReset = logResetTypes[type];
       const isFullReset = type === 'all';
 
-      if (logCategoryToReset || isFullReset) {
+      if (!skipLog && (logCategoryToReset || isFullReset)) {
         const log = loadDataFromLocal(REVIEW_LOG_KEY) || {};
         const kst = getKSTDateString();
 
@@ -170,8 +173,10 @@ export const useVerseData = () => {
       }
 
       const newStatusData = JSON.parse(JSON.stringify(reviewStatusData));
+      const targetIdSet = verseIds ? new Set(verseIds) : null;
 
       for (const verse of rawVerses) {
+        if (targetIdSet && !targetIdSet.has(verse.id)) continue;
         if (!newStatusData[verse.id]) newStatusData[verse.id] = {};
         keysToReset.forEach((prop) => {
           if (prop.includes('maxCompletedTurn')) {

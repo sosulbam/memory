@@ -21,7 +21,7 @@ const ResetDialog = ({ open, onClose, onReset }) => {
         <Typography gutterBottom>어떤 복습 데이터를 초기화하시겠습니까?</Typography>
         <Box display="flex" flexDirection="column" gap={1} mt={2}>
           <Button onClick={() => { onReset('all'); onClose(); }} color="error">전체 복습 상태 초기화 (통계 기록은 유지)</Button>
-          <Button onClick={() => { onReset('all_turns'); onClose(); }} color="warning">차수 복습 초기화 (일반)</Button>
+          <Button onClick={() => { onReset('all_turns'); onClose(); }} color="warning">차수 복습 초기화 (일반, 이력 삭제 후 1차로)</Button>
           <Button onClick={() => { onReset('all_turns_new'); onClose(); }} color="warning">차수별 뉴구절 초기화 (1차로)</Button>
           <Button onClick={() => { onReset('all_turns_recent'); onClose(); }} color="warning">차수별 최근구절 초기화 (1차로)</Button>
           <Button onClick={() => { onReset('new'); onClose(); }}>뉴구절복습 초기화</Button>

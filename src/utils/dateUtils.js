@@ -7,3 +7,18 @@
  */
 export const getKSTDateString = () =>
   new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+/**
+ * 복습날짜("YYYY. M. D.")를 '마지막 복습: 3일 전' 문구로 변환합니다.
+ * 복습 카드(VerseCard)와 구절 구조 보기(VerseTreePage)가 같은 문구를 쓰도록 공유합니다.
+ */
+export const calculateDaysAgoText = (reviewDateStr) => {
+  if (!reviewDateStr) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const reviewDate = new Date(reviewDateStr.replace(/\.\s*/g, '-')); reviewDate.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today.getTime() - reviewDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (isNaN(diffDays) || diffDays < 0) return null;
+  if (diffDays === 0) return '마지막 복습: 오늘';
+  if (diffDays === 1) return '마지막 복습: 어제';
+  return `마지막 복습: ${diffDays}일 전`;
+};

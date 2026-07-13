@@ -86,6 +86,17 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
     if (displaySnackbar) showSnackbar('현재 차수 일정이 저장되었습니다.', 'success');
   };
 
+  // 선택 가능한 차수 목록: 구절들이 완료한 최대 차수 + 1 (현재 선택된 차수가 더 크면 그 값 유지)
+  const turnOptions = useMemo(() => {
+    const active = (originalVerses || []).filter(v => !v.미암송여부);
+    const maxOf = (key) => active.reduce((m, v) => Math.max(m, v[key] || 0), 0);
+    return {
+      review: Math.max(maxOf('maxCompletedTurn') + 1, settings.targetTurn || 1),
+      new: Math.max(maxOf('maxCompletedTurnForNew') + 1, settings.targetTurnForNew || 1),
+      recent: Math.max(maxOf('maxCompletedTurnForRecent') + 1, settings.targetTurnForRecent || 1),
+    };
+  }, [originalVerses, settings.targetTurn, settings.targetTurnForNew, settings.targetTurnForRecent]);
+
   const dailyGoalDisplay = useMemo(() => {
     const schedule = turnScheduleData ? turnScheduleData[settings.targetTurn] : null;
     if (settings.mode !== 'turnBasedReview' || !schedule || !schedule.startDate || !schedule.endDate || !originalVerses) return null;
@@ -99,7 +110,9 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
     const remainingDays = totalDays - elapsedDays;
     const { selectedCategories, selectedSubcategories } = settings;
     const categoryFilter = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
-    const targetVerses = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && (v.currentReviewTurn || 1) === settings.targetTurn && (v.maxCompletedTurn || 0) < settings.targetTurn && categoryFilter(v));
+    // 완료 판정은 홈/트리와 동일하게 maxCompletedTurn 기준만 사용
+    // (currentReviewTurn 비교는 뉴구절에서 갓 승격된 구절을 누락시켜 다차수에서 어긋남)
+    const targetVerses = originalVerses.filter(v => !v.미암송여부 && !v.뉴구절여부 && !v.최근구절여부 && (v.maxCompletedTurn || 0) < settings.targetTurn && categoryFilter(v));
     if (remainingDays <= 0 || targetVerses.length === 0) return null;
     const dailyGoal = Math.ceil(targetVerses.length / remainingDays);
     return `남은 ${remainingDays}일간 하루 ${dailyGoal}개 암송 필요`;
@@ -127,7 +140,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
           <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsIcon /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
           <Collapse in={openSetup} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2 }}>
-              <ControlPanel settings={settings} setters={setters} displayedCategories={displayedCategories} displayedSubcategories={displayedSubcategories} turnSchedule={turnScheduleData ? turnScheduleData[settings.targetTurn] : {}} onSaveTurnSchedule={handleSaveTurnSchedule} dailyGoalDisplay={dailyGoalDisplay} />
+              <ControlPanel settings={settings} setters={setters} displayedCategories={displayedCategories} displayedSubcategories={displayedSubcategories} turnSchedule={(turnScheduleData && turnScheduleData[settings.targetTurn]) || { startDate: '', endDate: '' }} onSaveTurnSchedule={handleSaveTurnSchedule} dailyGoalDisplay={dailyGoalDisplay} turnOptions={turnOptions} />
             </Box>
           </Collapse>
 

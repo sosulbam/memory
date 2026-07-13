@@ -11,6 +11,7 @@ import ReviewDashboard from '../components/ReviewDashboard';
 import ReviewSession from '../components/ReviewSession';
 import TagDialog from '../components/TagDialog';
 import { THEMES } from '../constants';
+import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
 
 const HomePage = () => {
   const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
@@ -84,33 +85,55 @@ const HomePage = () => {
     return Math.max(0, todaysGoal);
   }, [mode, isFocusMode, todaysGoal, sessionTodaysGoal, sessionStats.sessionCompletedCount]);
 
+  // 완료 다이얼로그 확인:
+  //  - 카테고리별: 현재 선택 범위의 복습여부만 초기화 → 같은 범위를 처음부터 다시 (통계 기록은 유지)
+  //  - 차수별 복습구절: 기록을 지우지 않고 다음 차수로 진급 (maxCompletedTurn 이력 보존)
   const handleConfirmReset = () => {
-    let resetType = '';
-    if (resetConfirm.mode === 'turnBasedNew') resetType = 'all_turns_new';
-    else if (resetConfirm.mode === 'turnBasedRecent') resetType = 'all_turns_recent';
-    else if (resetConfirm.mode === 'turnBasedReview') resetType = 'all_turns';
+    const doneMode = resetConfirm.mode;
 
-    if (resetType) resetReviewStatus(resetType, showSnackbar);
+    if (doneMode === 'category') {
+      const { selectedCategories, selectedSubcategories } = settings;
+      const categoryFilter = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
+      const verseIds = (originalVerses || []).filter(v => !v.미암송여부 && categoryFilter(v)).map(v => v.id);
+      resetReviewStatus('category', showSnackbar, { verseIds, skipLog: true });
+    } else if (doneMode === 'turnBasedReview') {
+      const nextTurn = advanceToNextTurn(doneMode, settings, setters);
+      showSnackbar(`${nextTurn}차 복습을 시작합니다. 복습 설정에서 ${nextTurn}차 일정을 등록해 주세요.`, 'success');
+    }
     setResetConfirm({ open: false, mode: null, turn: 0 });
   };
 
   const handleCancelReset = () => { setResetConfirm({ open: false, mode: null, turn: 0 }); };
 
+  // 대시보드에서 직접 다음 차수 시작 (다이얼로그를 닫았거나 이미 완주 상태로 들어온 경우)
+  const handleAdvanceTurn = (turnMode) => {
+    const meta = TURN_MODE_META[turnMode];
+    if (!meta) return;
+    const nextTurn = advanceToNextTurn(turnMode, settings, setters);
+    const scheduleHint = turnMode === 'turnBasedReview' ? ` 복습 설정에서 ${nextTurn}차 일정을 등록해 주세요.` : '';
+    showSnackbar(`${meta.label} ${nextTurn}차 복습을 시작합니다.${scheduleHint}`, 'success');
+  };
+
   useEffect(() => {
-    if (isTurnCompleted) {
-      let turnToReset;
-      if (mode === 'turnBasedReview') turnToReset = targetTurn;
-      else if (mode === 'turnBasedNew') turnToReset = targetTurnForNew;
-      else if (mode === 'turnBasedRecent') turnToReset = targetTurnForRecent;
+    if (!isTurnCompleted) return;
+
+    // 뉴구절·최근구절 차수는 별도 일정이 없으므로 확인 없이 바로 다음 차수로 넘긴다.
+    // (복습구절 차수는 새 차수의 시작일/종료일 입력이 필요해 다이얼로그 유지)
+    if (mode === 'turnBasedNew' || mode === 'turnBasedRecent') {
       resetTurnCompletion();
-      if (turnToReset) {
-        const timer = setTimeout(() => {
-          setResetConfirm({ open: true, mode: mode, turn: turnToReset });
-        }, 1200);
-        return () => clearTimeout(timer);
-      }
+      const done = mode === 'turnBasedNew' ? targetTurnForNew : targetTurnForRecent;
+      const label = TURN_MODE_META[mode].label;
+      const nextTurn = advanceToNextTurn(mode, settings, setters);
+      showSnackbar(`🎉 ${label} ${done}차 복습을 모두 마쳤습니다. 이어서 ${nextTurn}차를 시작합니다.`, 'success');
+      return;
     }
-  }, [isTurnCompleted, mode, targetTurn, targetTurnForNew, targetTurnForRecent, resetTurnCompletion]);
+    if (mode !== 'category' && mode !== 'turnBasedReview') return;
+
+    // ⚠️ 지연(setTimeout) 없이 즉시 연다. settings/setters는 렌더마다 새 객체라
+    //    이 이펙트가 매 렌더 재실행되며, 예약해 둔 타이머는 cleanup에 취소돼 버린다.
+    resetTurnCompletion();
+    setResetConfirm({ open: true, mode, turn: mode === 'turnBasedReview' ? targetTurn : 0 });
+  }, [isTurnCompleted, mode, targetTurn, targetTurnForNew, targetTurnForRecent, resetTurnCompletion, settings, setters, showSnackbar]);
 
   useEffect(() => {
     if (!originalVerses) return;
@@ -153,15 +176,33 @@ const HomePage = () => {
             settings={settings} setters={setters} verses={verses} remainingToday={remainingToday}
             favoriteVerse={favoriteVerse} themeKey={themeKey}
             onStartReview={() => { setSessionTodaysGoal(todaysGoal); setIsFocusMode(true); }}
+            onAdvanceTurn={handleAdvanceTurn}
           />
           <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Container>
       )}
 
       <Dialog open={resetConfirm.open} onClose={handleCancelReset}>
-        <DialogTitle>복습 완료</DialogTitle>
-        <DialogContent><Typography>{resetConfirm.turn}차 복습이 모두 완료되었습니다.</Typography><Typography>완료 기록을 초기화하여 다시 복습하시겠습니까?</Typography></DialogContent>
-        <DialogActions><Button onClick={handleCancelReset}>취소</Button><Button onClick={handleConfirmReset} variant="contained">확인</Button></DialogActions>
+        <DialogTitle>복습 완료 🎉</DialogTitle>
+        <DialogContent>
+          {resetConfirm.mode === 'category' ? (
+            <>
+              <Typography>선택한 범위의 구절을 모두 복습했습니다.</Typography>
+              <Typography>완료 표시를 초기화하고 처음부터 다시 복습하시겠습니까? (통계 기록은 유지됩니다)</Typography>
+            </>
+          ) : (
+            <>
+              <Typography>{resetConfirm.turn}차 복습이 모두 완료되었습니다.</Typography>
+              <Typography>{resetConfirm.turn + 1}차 복습을 시작하시겠습니까? (완료 이력은 그대로 남습니다)</Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelReset}>나중에</Button>
+          <Button onClick={handleConfirmReset} variant="contained">
+            {resetConfirm.mode === 'category' ? '다시 시작' : `${resetConfirm.turn + 1}차 시작`}
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

@@ -94,7 +94,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
     const completedList = base.filter(v => completionCheck[mode](v));
 
-    if (mode.startsWith('turnBased') && remainingList.length === 0 && base.length > 0) {
+    if ((mode.startsWith('turnBased') || mode === 'category') && remainingList.length === 0 && base.length > 0) {
         setIsTurnCompleted(true);
     }
 

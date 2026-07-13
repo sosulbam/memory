@@ -22,13 +22,16 @@ import BuildIcon from '@mui/icons-material/Build';
 import SwapVertIcon from '@mui/icons-material/SwapVert';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import HistoryIcon from '@mui/icons-material/History';
 import { DataContext } from '../contexts/DataContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import {
   TURN_BASED_MODES, getTurnTargetLabel, buildTreeReviewData,
 } from '../utils/reviewScope';
-import { buildReviewUpdates, writeReviewLog } from '../utils/reviewActions';
+import { buildReviewUpdates, writeReviewLog, advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
+import { calculateDaysAgoText } from '../utils/dateUtils';
 import ActionBar from '../components/ActionBar';
 import TagDialog from '../components/TagDialog';
 import { loadDataFromLocal, saveDataToLocal } from '../api/localStorageApi';
@@ -48,6 +51,9 @@ const VerseRow = React.memo(function VerseRow({
   verse: v, color, vOpen, done, isTarget, reviewMode, toolsDefault, toolsOpen,
   turnLabel, onToggleVerse, onToggleTools, onComplete, onStatusToggle, onTagOpen, onCopy,
 }) {
+  // 홈 복습 카드와 동일한 문구('마지막 복습: 3일 전')
+  const daysAgoText = calculateDaysAgoText(v.복습날짜);
+
   return (
     <Box data-verse-id={v.id} sx={{ opacity: done ? 0.5 : 1 }}>
       <Box
@@ -84,9 +90,16 @@ const VerseRow = React.memo(function VerseRow({
         >
           {v.제목}
         </Typography>
-        <Typography variant="caption" sx={{ ml: 'auto', color: 'text.secondary', flexShrink: 0 }}>
-          {v.장절}
-        </Typography>
+        <Box sx={{ ml: 'auto', flexShrink: 0, textAlign: 'right', lineHeight: 1.25 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+            {v.장절}
+          </Typography>
+          {daysAgoText && (
+            <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.68rem', display: 'block' }}>
+              {daysAgoText.replace('마지막 복습: ', '')}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* 본문 카드 (아코디언) */}
@@ -96,7 +109,15 @@ const VerseRow = React.memo(function VerseRow({
           sx={{ my: 1, p: 2, borderRadius: 2, backgroundColor: `${color}0D`, border: `1px solid ${color}33` }}
         >
           <Typography sx={{ fontWeight: 700, color, fontSize: '0.9rem', mb: 0.25 }}>{v.제목}</Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>{v.장절}</Typography>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={0.5}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>{v.장절}</Typography>
+            <Stack direction="row" alignItems="center" spacing={0.4}>
+              <HistoryIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                {daysAgoText ? `${daysAgoText} (${v.복습날짜})` : '아직 복습 기록이 없습니다'}
+              </Typography>
+            </Stack>
+          </Stack>
           <Divider sx={{ my: 1, borderColor: `${color}33` }} />
           <Typography sx={{ lineHeight: 1.8, whiteSpace: 'pre-line', wordBreak: 'keep-all', color: 'text.primary' }}>
             {v.본문}
@@ -155,7 +176,7 @@ const VerseRow = React.memo(function VerseRow({
 
 const VerseTreePage = () => {
   const { originalVerses, updateVerseStatus, turnScheduleData, tagsData, updateTags } = useContext(DataContext);
-  const { settings } = useAppSettings();
+  const { settings, setters } = useAppSettings();
   const { showSnackbar } = useSnackbar();
 
   // 태그 편집 다이얼로그 대상 구절 (공개판은 페이지 단위 1개)
@@ -215,6 +236,27 @@ const VerseTreePage = () => {
 
   // 차수별 복습이고 스케줄이 있어 오늘 분량 개념이 성립하는지
   const hasDailyGoal = treeMode === 'turnBasedReview' && reviewData.goal !== null;
+
+  // 현재 차수를 완주했는지 (대상은 있었는데 남은 구절이 0)
+  const turnCompleted = reviewData.remainingCount === 0 && reviewData.completedCount > 0;
+  const currentTurn = settings[TURN_MODE_META[treeMode].key] || 1;
+
+  const handleAdvanceTurn = useCallback(() => {
+    const meta = TURN_MODE_META[treeMode];
+    const nextTurn = advanceToNextTurn(treeMode, settings, setters);
+    const scheduleHint = treeMode === 'turnBasedReview' ? ` 복습 설정에서 ${nextTurn}차 일정을 등록해 주세요.` : '';
+    showSnackbar(`${meta.label} ${nextTurn}차 복습을 시작합니다.${scheduleHint}`, 'success');
+  }, [treeMode, settings, setters, showSnackbar]);
+
+  // 뉴구절·최근구절 차수는 별도 일정이 없으므로 완주 시 확인 없이 바로 다음 차수로 넘긴다.
+  // (복습구절 차수는 새 차수의 시작일/종료일 입력이 필요해 아래 '다음 차수 시작' 버튼으로 처리)
+  useEffect(() => {
+    if (!reviewMode || !turnCompleted) return;
+    if (treeMode !== 'turnBasedNew' && treeMode !== 'turnBasedRecent') return;
+    const meta = TURN_MODE_META[treeMode];
+    const nextTurn = advanceToNextTurn(treeMode, settings, setters);
+    showSnackbar(`🎉 ${meta.label} ${currentTurn}차 복습을 모두 마쳤습니다. 이어서 ${nextTurn}차를 시작합니다.`, 'success');
+  }, [reviewMode, turnCompleted, treeMode, currentTurn, settings, setters, showSnackbar]);
 
   // 오늘 분량 진행률: 오늘 완료 / (오늘 완료 + 남은 목표)
   const dailyDone = reviewData.doneTodayCount;
@@ -524,6 +566,21 @@ const VerseTreePage = () => {
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+      )}
+
+      {/* 현재 차수 완주 → 설정을 열지 않고 여기서 바로 다음 차수 시작
+          (뉴구절·최근구절은 자동 진급되므로 실질적으로 복습구절 차수에서 노출) */}
+      {reviewMode && turnCompleted && (
+        <Button
+          fullWidth
+          variant="contained"
+          color="success"
+          startIcon={<RestartAltIcon />}
+          onClick={handleAdvanceTurn}
+          sx={{ mb: 1 }}
+        >
+          🎉 {currentModeLabel} {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
+        </Button>
       )}
 
       {/* 복습 모드 옵션: 완료 표시 방식 + 오늘 분량 */}

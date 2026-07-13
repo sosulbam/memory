@@ -25,6 +25,7 @@ const ControlPanel = ({
   turnSchedule = { startDate: '', endDate: '' },
   onSaveTurnSchedule,
   dailyGoalDisplay,
+  turnOptions = { review: 1, new: 1, recent: 1 },
 }) => {
   const {
     mode,
@@ -51,6 +52,12 @@ const ControlPanel = ({
 
   // --- 여기를 수정했습니다: 카테고리 선택 메뉴가 표시될 조건 변경 ---
   const showCategorySelectors = mode === 'category' || mode === 'pending' || mode.startsWith('turnBased');
+
+  // 진행 이력(maxCompletedTurn)에 따라 선택 가능한 차수 목록을 만든다 (완료한 차수 + 다음 차수)
+  const turnMenuItems = (count) =>
+    Array.from({ length: Math.max(1, count) }, (_, i) => i + 1).map((n) => (
+      <MenuItem key={n} value={n}>{n}차</MenuItem>
+    ));
 
   return (
     <Box>
@@ -114,7 +121,7 @@ const ControlPanel = ({
             <FormControl size="small" fullWidth>
               <InputLabel>복습 차수</InputLabel>
               <Select value={targetTurn} label="복습 차수" onChange={(e) => setTargetTurn(Number(e.target.value))}>
-                  <MenuItem value={1}>1차</MenuItem>
+                  {turnMenuItems(turnOptions.review)}
               </Select>
             </FormControl>
           </Grid>
@@ -124,7 +131,7 @@ const ControlPanel = ({
             <FormControl size="small" fullWidth>
                 <InputLabel>뉴구절 차수</InputLabel>
                 <Select value={targetTurnForNew} label="뉴구절 차수" onChange={(e) => setTargetTurnForNew(Number(e.target.value))} >
-                    <MenuItem value={1}>1차</MenuItem>
+                    {turnMenuItems(turnOptions.new)}
                 </Select>
             </FormControl>
           </Grid>
@@ -134,7 +141,7 @@ const ControlPanel = ({
             <FormControl size="small" fullWidth>
                 <InputLabel>최근구절 차수</InputLabel>
                 <Select value={targetTurnForRecent} label="최근구절 차수" onChange={(e) => setTargetTurnForRecent(Number(e.target.value))} >
-                    <MenuItem value={1}>1차</MenuItem>
+                    {turnMenuItems(turnOptions.recent)}
                 </Select>
             </FormControl>
             </Grid>

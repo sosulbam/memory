@@ -56,6 +56,23 @@ export const buildReviewUpdates = (verse, mode, turns = {}) => {
   return updates;
 };
 
+// 차수별 모드 → 설정 키 / 세터 이름 / 사람이 읽는 이름
+export const TURN_MODE_META = {
+  turnBasedReview: { key: 'targetTurn', setter: 'setTargetTurn', label: '복습구절' },
+  turnBasedNew: { key: 'targetTurnForNew', setter: 'setTargetTurnForNew', label: '뉴구절' },
+  turnBasedRecent: { key: 'targetTurnForRecent', setter: 'setTargetTurnForRecent', label: '최근구절' },
+};
+
+// 현재 차수를 다음 차수로 진급시킨다. 완료 이력(maxCompletedTurn*)은 지우지 않으므로
+// "몇 바퀴 돌았는지"가 누적 보존된다. 진급한 차수를 반환(모드가 아니면 null).
+export const advanceToNextTurn = (mode, settings, setters) => {
+  const meta = TURN_MODE_META[mode];
+  if (!meta) return null;
+  const nextTurn = (settings[meta.key] || 1) + 1;
+  setters[meta.setter](nextTurn);
+  return nextTurn;
+};
+
 // 복습 로그(통계/복습로그 페이지 집계)에 1건 기록
 export const writeReviewLog = (mode) => {
   const logCategoryMap = {

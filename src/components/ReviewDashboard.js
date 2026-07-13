@@ -8,6 +8,7 @@ import Filter1Icon from '@mui/icons-material/Filter1';
 import CategoryIcon from '@mui/icons-material/Category';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { THEMES, MODES } from '../constants';
 
 const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
@@ -53,9 +54,16 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
 };
 
 const ReviewDashboard = ({
-    settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey
+    settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn
 }) => {
-    const { fontType } = settings;
+    const { fontType, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
+
+    // 차수별 모드에서 대상 구절이 하나도 남지 않았을 때 = 현재 차수 완주.
+    // 설정을 열지 않고 여기서 바로 다음 차수를 시작할 수 있게 한다.
+    const currentTurn = mode === 'turnBasedReview' ? targetTurn
+        : mode === 'turnBasedNew' ? targetTurnForNew
+        : mode === 'turnBasedRecent' ? targetTurnForRecent : null;
+    const canAdvanceTurn = currentTurn !== null && verses.length === 0;
     const handleModeChange = (event, newMode) => {
         if (newMode !== null) setters.setMode(newMode);
     };
@@ -111,6 +119,17 @@ const ReviewDashboard = ({
                         >
                             복습 시작하기
                         </Button>
+                        {canAdvanceTurn && (
+                            <Button
+                                variant="outlined"
+                                size="large"
+                                startIcon={<RestartAltIcon />}
+                                onClick={() => onAdvanceTurn && onAdvanceTurn(mode)}
+                                sx={{ mt: 1, width: '100%', py: 1.2 }}
+                            >
+                                {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
+                            </Button>
+                        )}
                     </Paper>
                 </Box>
             </Box>

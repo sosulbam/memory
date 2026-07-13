@@ -72,6 +72,11 @@ const AppLayout = () => {
 
   const handleReset = (type) => {
     resetReviewStatus(type, showSnackbar);
+    // 차수 기록을 지우면 선택된 목표 차수도 1차로 되돌린다
+    // (기록은 0인데 목표만 3차면 다음 완료가 1·2차를 건너뛰고 3차로 찍히는 것 방지)
+    if (type === 'all' || type === 'all_turns') setters.setTargetTurn(1);
+    if (type === 'all' || type === 'all_turns_new') setters.setTargetTurnForNew(1);
+    if (type === 'all' || type === 'all_turns_recent') setters.setTargetTurnForRecent(1);
   };
 
   const title = pageTitles[location.pathname] || '말씀사랑';
