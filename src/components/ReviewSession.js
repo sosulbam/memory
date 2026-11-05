@@ -218,7 +218,7 @@ const ReviewSession = ({
             <Backdrop sx={{ zIndex: 1350 }} open={isActionBarVisible} onClick={() => setIsActionBarVisible(false)} />
             {verse && (
                 <Slide direction="up" in={isActionBarVisible} mountOnEnter unmountOnExit>
-                    <Paper elevation={4} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1400, borderTopLeftRadius: 16, borderTopRightRadius: 16, pb: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+                    <Paper elevation={4} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1400, borderTopLeftRadius: 16, borderTopRightRadius: 16, pb: 'calc(16px + var(--sab))' }}>
                         <Typography variant="caption" align="center" display="block" sx={{ pt: 1, color: 'text.secondary' }}>바깥 영역을 터치하여 닫기</Typography>
                         <ActionBar verse={verse} onStatusToggle={onStatusToggle} onTagDialogOpen={onTagDialogOpen} onCopy={handleCopyVerse} />
                     </Paper>

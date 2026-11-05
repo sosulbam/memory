@@ -1,3 +1,9 @@
+:root {
+  /* 위/아래 여백 — 기본은 폰이 알려 주는 값. 설정에서 고르면 utils/safeArea.js 가 덮어쓴다 */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

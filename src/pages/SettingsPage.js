@@ -1,5 +1,5 @@
 // src/pages/SettingsPage.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider
 } from '@mui/material';
@@ -9,6 +9,21 @@ import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { THEMES } from '../constants';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { TOP_OPTIONS, BOTTOM_OPTIONS, BUILD_ID, loadSafeArea, saveSafeArea, measureCss } from '../utils/safeArea';
+
+// 문제 진단용 한 줄 — 사용자가 캡처해 보내면 새 버전 여부·폰이 알려 주는 여백을 바로 알 수 있다
+const readDiag = () => {
+  const ua = navigator.userAgent || '';
+  const browser = (ua.match(/SamsungBrowser\/[\d.]+|EdgA?\/[\d.]+|Chrome\/[\d.]+|Firefox\/[\d.]+|Version\/[\d.]+ (Mobile\/\S+ )?Safari/) || ['?'])[0].split(' ')[0];
+  const os = (ua.match(/Android [\d.]+|iPhone OS [\d_]+|Windows NT [\d.]+|Mac OS X [\d_]+/) || [''])[0];
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return {
+    envTop: measureCss('env(safe-area-inset-top, 0px)'), envBottom: measureCss('env(safe-area-inset-bottom, 0px)'),
+    useTop: measureCss('var(--sat)'), useBottom: measureCss('var(--sab)'),
+    size: `${window.innerWidth}×${window.innerHeight}`, screen: `${window.screen.width}×${window.screen.height}`,
+    dpr: window.devicePixelRatio, standalone, browser, os,
+  };
+};
 
 const FONT_SIZE_MARKS = [
   { value: 0, label: '작게' },
@@ -31,6 +46,22 @@ const SettingsPage = () => {
   const { fontSize, listFontSize, fontType, themeKey } = settings;
   const { setFontSize, setListFontSize, setFontType, setThemeKey } = setters;
   const { showSnackbar } = useSnackbar();
+  const [safeArea, setSafeArea] = useState(loadSafeArea);
+  const [diag, setDiag] = useState(null);
+
+  useEffect(() => {
+    const update = () => setDiag(readDiag());
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [safeArea]);
+
+  const changeSafeArea = (side, val) => {
+    if (val === null) return;
+    const next = { ...safeArea, [side]: val };
+    setSafeArea(next);
+    saveSafeArea(next);
+  };
 
   const handleClearCache = async () => {
     try {
@@ -157,6 +188,24 @@ const SettingsPage = () => {
           ))}
         </Box>
       </Paper>
+      {/* 화면 위아래 여백 — 폰 상태바·하단 버튼 줄에 앱이 가려질 때 */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+        <SectionTitle>화면 위아래 여백</SectionTitle>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          앱 맨 위(제목·메뉴 버튼)나 맨 아래가 폰의 상태바·버튼 줄에 가려질 때만 바꾸세요. 숫자가 클수록 많이 비켜 갑니다.
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 'bold' }}>위쪽</Typography>
+        <ToggleButtonGroup value={safeArea.top} exclusive fullWidth size="small" sx={{ mb: 1.5 }}
+          onChange={(e, v) => changeSafeArea('top', v)} aria-label="위 여백">
+          {TOP_OPTIONS.map((o) => <ToggleButton key={o} value={o}>{o === 'auto' ? '자동' : `+${o}`}</ToggleButton>)}
+        </ToggleButtonGroup>
+        <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 'bold' }}>아래쪽</Typography>
+        <ToggleButtonGroup value={safeArea.bottom} exclusive fullWidth size="small"
+          onChange={(e, v) => changeSafeArea('bottom', v)} aria-label="아래 여백">
+          {BOTTOM_OPTIONS.map((o) => <ToggleButton key={o} value={o}>{o === 'auto' ? '자동' : `+${o}`}</ToggleButton>)}
+        </ToggleButtonGroup>
+      </Paper>
+
       {/* 앱 업데이트 */}
       <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
         <SectionTitle>앱 업데이트</SectionTitle>
@@ -173,6 +222,15 @@ const SettingsPage = () => {
           캐시 초기화 및 최신 버전으로 업데이트
         </Button>
       </Paper>
+
+      {/* 진단 정보 — 문제 문의 시 이 줄을 캡처해 보내 주세요 */}
+      {diag && (
+        <Typography variant="caption" color="text.disabled" component="div" data-testid="diag-line"
+          sx={{ mt: 2, textAlign: 'center', lineHeight: 1.6, wordBreak: 'break-all' }}>
+          빌드 {BUILD_ID} · 폰 여백 위 {diag.envTop}/아래 {diag.envBottom} · 적용 위 {diag.useTop}/아래 {diag.useBottom}
+          <br />화면 {diag.size} (기기 {diag.screen}, ×{diag.dpr}) · {diag.standalone ? '설치앱' : '브라우저'} · {diag.browser} · {diag.os}
+        </Typography>
+      )}
     </Box>
   );
 };

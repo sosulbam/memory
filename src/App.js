@@ -98,7 +98,7 @@ const AppLayout = () => {
         justifyContent: 'space-between',
         p: '8px 16px',
         // 폰이 화면을 상태바 밑까지 채워 그릴 때(안드로이드 edge-to-edge) 제목이 가려지지 않게
-        pt: 'calc(8px + env(safe-area-inset-top, 0px))',
+        pt: 'calc(8px + var(--sat))',
         borderBottom: '1px solid #eee',
         position: 'sticky',
         top: 0,
@@ -132,7 +132,7 @@ const AppLayout = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           px: 2, py: 1,
           bgcolor: '#1565c0', color: 'white',
-          position: 'sticky', top: 'calc(57px + env(safe-area-inset-top, 0px))', zIndex: 1099,
+          position: 'sticky', top: 'calc(57px + var(--sat))', zIndex: 1099,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SystemUpdateIcon fontSize="small" />

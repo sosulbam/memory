@@ -32,7 +32,7 @@ export const SnackbarProvider = ({ children }) => {
         autoHideDuration={4000}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ mb: 'env(safe-area-inset-bottom, 0px)' }}
+        sx={{ mb: 'var(--sab)' }}
       >
         <Alert onClose={handleClose} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

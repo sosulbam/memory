@@ -56,7 +56,7 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
         <Box sx={{
             position: 'absolute', top: 0, left: 0, right: 0,
             backgroundColor: 'rgba(0,0,0,0.3)', color: 'white', zIndex: 1,
-            pb: 1, pt: 'env(safe-area-inset-top, 0px)'
+            pb: 1, pt: 'var(--sat)'
         }}>
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -118,7 +118,7 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
 };
 const FocusModeFooter = ({ onFooterClick }) => (
     <Box sx={{
-        position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', left: '50%', transform: 'translateX(-50%)',
+        position: 'fixed', bottom: 'calc(20px + var(--sab))', left: '50%', transform: 'translateX(-50%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         color: 'rgba(255,255,255,0.7)', zIndex: 1,
     }}>

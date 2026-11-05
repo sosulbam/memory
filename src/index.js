@@ -4,6 +4,10 @@ import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
+import { applySafeArea, loadSafeArea } from './utils/safeArea';
+
+// 화면 그리기 전에 사용자가 고른 위/아래 여백을 먼저 적용
+applySafeArea(loadSafeArea());
 
 // --- 👇 아래 로그들을 추가해주세요 ---
 console.log("1. index.js 파일 실행 시작");
