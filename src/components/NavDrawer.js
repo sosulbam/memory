@@ -131,7 +131,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
   ];
 
   return (
-    <Drawer anchor="left" open={open} onClose={onClose} PaperProps={{ sx: { pt: 'var(--sat)', pb: 'var(--sab)' } }}>
+    <Drawer anchor="left" open={open} onClose={onClose} PaperProps={{ sx: { pt: 'var(--sat)', pb: 'var(--sab)', boxSizing: 'border-box' } }}>
       <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', height: '100%' }} role="presentation">
         <List>
           <ListItem disablePadding><ListItemButton component={RouterLink} to="/" onClick={onClose}><ListItemIcon>{menuItems[0].icon}</ListItemIcon><ListItemText primary={menuItems[0].text} /></ListItemButton></ListItem>
