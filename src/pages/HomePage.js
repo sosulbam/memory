@@ -171,7 +171,7 @@ const HomePage = () => {
           dailyProgress={{ todaysGoal, completedToday }} tagsData={tagsData} updateTags={updateTags}
         />
       ) : (
-        <Container maxWidth="lg" sx={{ p: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="lg" sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 'calc(16px + env(safe-area-inset-bottom, 0px))', sm: 'calc(24px + env(safe-area-inset-bottom, 0px))' } }}>
           <ReviewDashboard
             settings={settings} setters={setters} verses={verses} remainingToday={remainingToday}
             favoriteVerse={favoriteVerse} themeKey={themeKey}

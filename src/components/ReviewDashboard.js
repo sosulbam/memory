@@ -77,7 +77,7 @@ const ReviewDashboard = ({
     }, [fontType]);
 
     return (
-        <Box sx={{ height: 'calc(100vh - 57px)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <Box sx={{ height: 'calc(100vh - 57px - env(safe-area-inset-top, 0px))', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <Box sx={{ maxWidth: 'sm', mx: 'auto', width: '100%', pt: 1, pb: 1, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                 <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 3, display: 'flex', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '22vh', height: '100%', }}>
                     {favoriteVerse && (

@@ -505,7 +505,7 @@ const VerseTreePage = () => {
       <Box
         sx={{
           position: 'sticky',
-          top: 57,
+          top: 'calc(57px + env(safe-area-inset-top, 0px))',
           zIndex: 900,
           // 불투명 배경 사용 (backdrop-filter blur는 스크롤마다 재페인트되어 굼뜸)
           backgroundColor: '#fff',
