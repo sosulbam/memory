@@ -19,6 +19,7 @@ import PlaylistPlayIcon from '@mui/icons-material/PlaylistPlay';
 import MicIcon from '@mui/icons-material/Mic';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
+import { PaperFront, PaperBack } from './PaperVerseCard';
 
 const calculateDaysAgoText = (reviewDateStr) => {
     if (!reviewDateStr) return null;
@@ -102,7 +103,9 @@ const StatusDisplay = ({ verse }) => {
 };
 
 const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStats, versesCount, onClick, onFooterClick, isBrowsingCompleted, onToggleBrowseMode, currentIndex, remainingToday, onHelpClick, dailyProgress, onAutoPlay, isAutoPlaying }) => {
-    const { mode, targetTurn, targetTurnForNew, targetTurnForRecent, isFocusMode, fontSize, completedSortOrder, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority } = settings;
+    const { mode, targetTurn, targetTurnForNew, targetTurnForRecent, isFocusMode, fontSize, completedSortOrder, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, cardStyle } = settings;
+    // 집중모드 카드 보기에서만 종이 카드 (설정 「카드 모양: 기본」이면 종전 화면)
+    const usePaper = isFocusMode && cardStyle !== 'classic' && !!verse;
     const { setIsFocusMode, setCompletedSortOrder } = setters;
     const { showSnackbar } = useSnackbar();
 
@@ -437,9 +440,24 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
         </Box>
     );
 
+    // 종이 카드: 카드 아래에 음성 버튼·차수 줄은 종전처럼 둔다 (애니메이션 없음)
+    const PaperContent = () => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5, width: '100%', px: 2, pt: 'calc(100px + var(--sat))', pb: 'calc(80px + var(--sab))', boxSizing: 'border-box', minHeight: '100%', justifyContent: 'center' }}>
+            {showAnswer ? <PaperBack verse={verse} fontSize={fontSize} /> : <PaperFront verse={verse} fontSize={fontSize} />}
+            <TTSControls />
+            {!showAnswer && mode.startsWith('turnBased') && (
+                <Typography variant="subtitle1" sx={{ fontSize: '1.05rem', userSelect: 'none' }}>
+                    {mode === 'turnBasedReview' && `(${verse.currentReviewTurn || 1}차 / 목표 ${targetTurn}차)`}
+                    {mode === 'turnBasedNew' && `(뉴 ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForNew}차)`}
+                    {mode === 'turnBasedRecent' && `(최근 ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForRecent}차)`}
+                </Typography>
+            )}
+        </Box>
+    );
+
     const BackContent = ({ verse }) => (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', pt: isFocusMode ? '120px' : '20px', pb: isFocusMode ? '80px' : '20px', px: isFocusMode ? { xs: '20px', sm: '60px' } : '20px', boxSizing: 'border-box' }}>
-            <Box sx={{ overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <Box data-card-scroll sx={{ overflowY: 'auto', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <Typography fontWeight="bold" sx={{ mb: 1, color: 'rgba(255, 255, 255, 0.85)', fontSize: titleSizeMap[fontSize] || titleSizeMap.medium, textAlign: 'center' }}>
                         {verse?.제목}
@@ -472,7 +490,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
                 <CardContent sx={{ position: 'relative', width: '100%', background: currentTheme, color: 'white', padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: isFocusMode ? '100%' : '350px', borderRadius: isFocusMode ? 0 : 1 }}>
                     {isFocusMode && <FocusModeHeader setIsFocusMode={setIsFocusMode} sessionStats={sessionStats} versesCount={versesCount} isBrowsingCompleted={isBrowsingCompleted} onToggleBrowseMode={onToggleBrowseMode} currentIndex={currentIndex} remainingToday={remainingToday} onHelpClick={onHelpClick} settings={settings} dailyProgress={dailyProgress} daysAgoText={daysAgoText} startDateText={startDateText} />}
                     {isBrowsingCompleted && (<Box sx={{ position: 'absolute', top: { xs: '52px', sm: '60px' }, left: { xs: '12px', sm: '16px' }, display: 'flex', alignItems: 'center', gap: 1, zIndex: 1 }}> <Chip icon={<ReplayIcon />} label="전체 완료 구절" size="small" sx={{ bgcolor: 'rgba(0,0,0,0.4)', color: 'white' }} /> <Tooltip title={completedSortOrder === 'recent' ? "구절순으로 정렬" : "최근 복습순으로 정렬"}> <IconButton size="small" onClick={(e) => { e.stopPropagation(); setCompletedSortOrder(completedSortOrder === 'recent' ? 'sequential' : 'recent'); }} sx={{ bgcolor: 'rgba(0,0,0,0.4)', color: 'white', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' } }}> {completedSortOrder === 'recent' ? <SortByAlphaIcon fontSize="small" /> : <HistoryIcon fontSize="small" />} </IconButton> </Tooltip> </Box>)}
-                    {showAnswer ? <BackContent verse={verse} /> : <FrontContent />}
+                    {usePaper ? <PaperContent /> : (showAnswer ? <BackContent verse={verse} /> : <FrontContent />)}
                     {isFocusMode && verse && <FocusModeFooter onFooterClick={onFooterClick} />}
                 </CardContent>
             </Card>

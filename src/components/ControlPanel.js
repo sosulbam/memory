@@ -36,6 +36,7 @@ const ControlPanel = ({
     targetTurnForNew,
     targetTurnForRecent,
     reviewView,
+    cardStyle,
     fontSize,
   } = settings;
   const {
@@ -47,6 +48,7 @@ const ControlPanel = ({
     setTargetTurnForNew,
     setTargetTurnForRecent,
     setReviewView,
+    setCardStyle,
     setFontSize,
   } = setters;
 
@@ -180,6 +182,25 @@ const ControlPanel = ({
                 <ToggleButton value="card">카드</ToggleButton>
                 <ToggleButton value="typing">타이핑</ToggleButton>
             </ToggleButtonGroup>
+            {reviewView === 'card' && (
+              <>
+                <Typography variant="caption" color="text.secondary" display="block" mt={1.5} mb={0.5}>
+                    카드 모양 (집중모드)
+                </Typography>
+                <ToggleButtonGroup
+                    color="primary"
+                    value={cardStyle || 'paper'}
+                    exclusive
+                    onChange={(e, v) => { if (v) setCardStyle(v); }}
+                    aria-label="Card Style"
+                    size="small"
+                    fullWidth
+                >
+                    <ToggleButton value="paper">종이 카드</ToggleButton>
+                    <ToggleButton value="classic">기본</ToggleButton>
+                </ToggleButtonGroup>
+              </>
+            )}
         </Box>
       )}
 

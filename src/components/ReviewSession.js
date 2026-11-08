@@ -116,7 +116,12 @@ const ReviewSession = ({
             if (isBrowsingCompleted) { browsePrev(); }
             else if (reviewView === 'card') { peekPrev(); }
         },
-        onSwipedUp: () => { if (reviewView === 'card' && verse) { setIsActionBarVisible(true); } },
+        onSwipedUp: (ev) => {
+            // 스크롤되는 카드 본문 안에서 위로 민 것은 본문 스크롤이지 메뉴 열기가 아니다
+            const scroller = ev?.event?.target?.closest?.('[data-card-scroll]');
+            if (scroller && scroller.scrollHeight > scroller.clientHeight + 1) return;
+            if (reviewView === 'card' && verse) { setIsActionBarVisible(true); }
+        },
         preventDefaultTouchmoveEvent: true,
         trackTouch: true,
     });

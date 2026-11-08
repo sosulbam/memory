@@ -14,6 +14,7 @@ export const AppSettingsProvider = ({ children }) => {
   const [targetTurnForNew, setTargetTurnForNew] = useState(1);
   const [targetTurnForRecent, setTargetTurnForRecent] = useState(1);
   const [reviewView, setReviewView] = useState('card');
+  const [cardStyle, setCardStyle] = useState('paper'); // 집중모드 카드 보기 모양: paper(종이 카드) | classic(기존)
   const [themeKey, setThemeKey] = useState('deepsea');
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [fontSize, setFontSize] = useState('medium');
@@ -44,6 +45,7 @@ export const AppSettingsProvider = ({ children }) => {
         setTargetTurnForNew(lastAppState.targetTurnForNew || 1);
         setTargetTurnForRecent(lastAppState.targetTurnForRecent || 1);
         setReviewView(lastAppState.reviewView || 'card');
+        setCardStyle(lastAppState.cardStyle === 'classic' ? 'classic' : 'paper');
         setFontSize(lastAppState.fontSize || 'medium');
         setListFontSize(lastAppState.listFontSize || 'medium');
         setCompletedSortOrder(lastAppState.completedSortOrder || 'recent');
@@ -69,12 +71,12 @@ export const AppSettingsProvider = ({ children }) => {
     const appStateToSave = {
       mode, order, selectedCategories, selectedSubcategories,
       targetTurn, targetTurnForNew, targetTurnForRecent,
-      reviewView, isFocusMode, fontSize, listFontSize, completedSortOrder,
+      reviewView, cardStyle, isFocusMode, fontSize, listFontSize, completedSortOrder,
       fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority // 저장
     };
     saveDataToLocal(LAST_APP_STATE_KEY, appStateToSave);
     saveDataToLocal(THEME_PREFERENCE_KEY, { theme: themeKey });
-  }, [mode, order, selectedCategories, selectedSubcategories, targetTurn, targetTurnForNew, targetTurnForRecent, reviewView, isFocusMode, fontSize, listFontSize, completedSortOrder, themeKey, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, isLoaded]);
+  }, [mode, order, selectedCategories, selectedSubcategories, targetTurn, targetTurnForNew, targetTurnForRecent, reviewView, cardStyle, isFocusMode, fontSize, listFontSize, completedSortOrder, themeKey, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, isLoaded]);
 
   const handleCategoryChange = (event) => {
     const { target: { value } } = event;
@@ -96,13 +98,13 @@ export const AppSettingsProvider = ({ children }) => {
     settings: {
       mode, order, selectedCategories, selectedSubcategories,
       targetTurn, targetTurnForNew, targetTurnForRecent,
-      reviewView, themeKey, isFocusMode, fontSize, listFontSize, completedSortOrder,
+      reviewView, cardStyle, themeKey, isFocusMode, fontSize, listFontSize, completedSortOrder,
       fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority // 제공
     },
     setters: {
       setMode, setOrder, setSelectedCategories, handleCategoryChange,
       setSelectedSubcategories, handleSubcategoryChange,
-      setTargetTurn, setTargetTurnForNew, setTargetTurnForRecent, setReviewView, setThemeKey, setIsFocusMode, setFontSize, setListFontSize, setCompletedSortOrder,
+      setTargetTurn, setTargetTurnForNew, setTargetTurnForRecent, setReviewView, setCardStyle, setThemeKey, setIsFocusMode, setFontSize, setListFontSize, setCompletedSortOrder,
       setFontType, setTtsOrder, setVoiceURI, setSpeechRate, setTtsInterval, setAudioPriority // 설정 함수
     },
   };
