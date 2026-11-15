@@ -10,6 +10,9 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import HistoryIcon from '@mui/icons-material/History';
+import { IS_LAMP } from '../edition';
+import { LampFocusHeader, LampFocusBar } from './LampFocus';
+import { formatRefFull } from '../utils/refFormat';
 
 const calculateDaysAgoText = (reviewDateStr) => {
     if (!reviewDateStr) return null;
@@ -198,7 +201,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
       variant="outlined"
       {...swipeHandlers}
       sx={{
-        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+        ...(IS_LAMP ? { position: 'fixed', inset: 0 } : { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }),
         borderRadius: 0, zIndex: 1300, border: 'none', display: 'flex',
         flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
         cursor: isBrowsingCompleted ? 'default' : 'text', userSelect: 'none',
@@ -207,6 +210,15 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
       }}
       onClick={handleClick}
     >
+      {IS_LAMP ? (
+        <LampFocusHeader
+          setIsFocusMode={setters.setIsFocusMode} sessionStats={sessionStats} versesCount={versesCount}
+          isBrowsingCompleted={isBrowsingCompleted} onToggleBrowseMode={onToggleBrowseMode} remainingToday={remainingToday}
+          onHelpClick={onHelpClick} settings={settings} dailyProgress={dailyProgress} daysAgoText={daysAgoText}
+          sortLabel={completedSortOrder === 'recent' ? '최근 복습순' : '구절순'}
+          onToggleSort={() => setCompletedSortOrder(completedSortOrder === 'recent' ? 'sequential' : 'recent')}
+        />
+      ) : (
       <FocusModeHeader 
         setIsFocusMode={setters.setIsFocusMode} 
         sessionStats={sessionStats} 
@@ -221,8 +233,9 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
         dailyProgress={dailyProgress}
         daysAgoText={daysAgoText}
       />
+      )}
       
-      {isBrowsingCompleted && (
+      {isBrowsingCompleted && !IS_LAMP && (
         <Box sx={{
             position: 'absolute', top: { xs: '52px', sm: '60px' }, left: { xs: '12px', sm: '16px' },
             display: 'flex', alignItems: 'center', gap: 1, zIndex: 1,
@@ -254,7 +267,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
         mb={2} 
         sx={{ mt: 11, userSelect: 'none' }}
       >
-        {verse ? `${verse.장절} — ${verse.카테고리}` : (isBrowsingCompleted ? '완료한 구절이 없습니다.' : '로딩 중...')}
+        {verse ? (IS_LAMP ? formatRefFull(verse.장절) : `${verse.장절} — ${verse.카테고리}`) : (isBrowsingCompleted ? '완료한 구절이 없습니다.' : '로딩 중...')}
       </Typography>
 
       <Typography variant="h5" sx={{ flexGrow: 1, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', textAlign: 'center', alignContent: 'center', userSelect: 'text' }}>
@@ -265,11 +278,13 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
         variant="h6" 
         sx={{ 
           mt: 2, height: '30px', color: 'rgba(255, 255, 255, 0.8)',
-          mb: 8, userSelect: 'none'
+          mb: IS_LAMP ? 13 : 8, userSelect: 'none'
         }}
       >
-        {isBrowsingCompleted 
-            ? '(스와이프로 구절을 넘겨보세요)' 
+        {IS_LAMP
+            ? (isBrowsingCompleted ? '' : (isVerseComplete ? '다 보았습니다' : '화면을 누를 때마다 한 단어씩 나옵니다'))
+            : isBrowsingCompleted
+            ? '(스와이프로 구절을 넘겨보세요)'
             : (isVerseComplete ? '✅ 완료! (Enter 또는 스와이프)' : '(화면을 탭하거나 스페이스바)')}
       </Typography>
 
@@ -281,7 +296,17 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
         inputMode={(isMobile || isBrowsingCompleted) ? "none" : "text"}
       />
       
-      {verse && <FocusModeFooter onFooterClick={onFooterClick} />}
+      {verse && !IS_LAMP && <FocusModeFooter onFooterClick={onFooterClick} />}
+      {verse && IS_LAMP && (
+        <LampFocusBar
+          mode={isBrowsingCompleted ? 'browse' : 'review'}
+          onAgain={() => actions?.skipCurrent?.()}
+          onDone={() => onComplete()}
+          onMenu={onFooterClick}
+          onPrev={() => actions?.browsePrev?.()}
+          onNext={() => actions?.browseNext?.()}
+        />
+      )}
     </Card>
   );
 };

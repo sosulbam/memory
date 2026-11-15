@@ -10,6 +10,7 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { THEMES, MODES } from '../constants';
+import { IS_LAMP } from '../edition';
 
 const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
     <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1.5, textAlign: 'center' }}>
@@ -18,20 +19,23 @@ const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
     </Grid>
 );
 
+// 등불판은 홈 단추와 같은 말로(새 구절·최근 구절)
+const LAMP_MODE_LABELS = { turnBasedReview: '차수별 복습', turnBasedNew: '새 구절', turnBasedRecent: '최근 구절' };
+
 const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     const { mode, order, selectedCategories, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
     const currentMode = MODES.find(m => m.value === mode);
-    const getTurnTarget = () => { if (mode === 'turnBasedReview') return `${targetTurn}차`; if (mode === 'turnBasedNew') return `뉴구절 ${targetTurnForNew}차`; if (mode === 'turnBasedRecent') return `최근 ${targetTurnForRecent}차`; return null; };
+    const getTurnTarget = () => { if (mode === 'turnBasedReview') return `${targetTurn}차`; if (mode === 'turnBasedNew') return `${IS_LAMP ? '새 구절' : '뉴구절'} ${targetTurnForNew}차`; if (mode === 'turnBasedRecent') return `최근 ${targetTurnForRecent}차`; return null; };
     const orderTextMap = { sequential: '순차', random: '랜덤', oldest_first: '오래된 순', grouped_random: '그룹별 랜덤', incorrect_only: '오답만 보기' };
 
     let infoItems = [
-        { icon: <InfoOutlinedIcon />, primary: "복습 모드", secondary: currentMode?.label || '알 수 없음' },
+        { icon: <InfoOutlinedIcon />, primary: "복습 모드", secondary: (IS_LAMP && LAMP_MODE_LABELS[mode]) || currentMode?.label || '알 수 없음' },
         { icon: <SortIcon />, primary: "정렬 방식", secondary: orderTextMap[order] || order },
     ];
 
     const turnTarget = getTurnTarget();
     if (turnTarget) infoItems.push({ icon: <Filter1Icon />, primary: "목표 차수", secondary: turnTarget });
-    infoItems.push({ icon: <CategoryIcon />, primary: "카테고리", secondary: selectedCategories.join(', ') });
+    infoItems.push({ icon: <CategoryIcon />, primary: IS_LAMP ? "분류" : "카테고리", secondary: selectedCategories.join(', ') });
 
     if (remainingToday !== null) {
         infoItems.push({
@@ -41,7 +45,20 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
             secondaryColor: remainingToday > 0 ? 'error.main' : 'text.secondary'
         });
     }
-    infoItems.push({ icon: <CheckCircleOutlineIcon />, primary: "진행 상태", secondary: `총 ${verses.length}개 남음` });
+    infoItems.push({ icon: <CheckCircleOutlineIcon />, primary: IS_LAMP ? "남은 구절" : "진행 상태", secondary: IS_LAMP ? `${verses.length}개` : `총 ${verses.length}개 남음` });
+
+    if (IS_LAMP) {
+        return (
+            <Box component="dl" sx={{ m: 0, textAlign: 'left', borderTop: '1px solid', borderColor: 'divider' }}>
+                {infoItems.filter(Boolean).map(item => (
+                    <Box key={item.primary} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                        <Typography component="dt" variant="body2" color="text.secondary">{item.primary}</Typography>
+                        <Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 600, textAlign: 'right', color: item.secondaryColor === 'error.main' ? 'text.primary' : 'inherit' }}>{item.secondary}</Typography>
+                    </Box>
+                ))}
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ textAlign: 'left' }}>
@@ -53,8 +70,15 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     );
 };
 
+const LAMP_EMPTY_HINT = {
+    turnBasedNew: '새로 외울 구절이 없습니다. 암송 팩에서 「새로 외울 구절」로 넣거나, 구절의 상태에서 「새 구절」을 켜세요.',
+    turnBasedRecent: '최근 구절로 표시한 구절이 없습니다. 구절의 상태에서 「최근」을 켜면 여기에 모입니다.',
+    turnBasedReview: '복습할 구절이 없습니다. 새 구절을 다 외웠으면 구절의 상태에서 「새 구절」을 풀어 복습으로 옮기세요.',
+};
+
 const ReviewDashboard = ({
-    settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn
+    settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn,
+    modePoolCount, hasSchedule, onOpenSchedule,
 }) => {
     const { fontType, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
 
@@ -63,7 +87,10 @@ const ReviewDashboard = ({
     const currentTurn = mode === 'turnBasedReview' ? targetTurn
         : mode === 'turnBasedNew' ? targetTurnForNew
         : mode === 'turnBasedRecent' ? targetTurnForRecent : null;
-    const canAdvanceTurn = currentTurn !== null && verses.length === 0;
+    // 등불판: 모드에 구절이 아예 없으면 「완주」가 아니다(검토 3번)
+    const modeIsEmpty = IS_LAMP && currentTurn !== null && modePoolCount === 0;
+    const canAdvanceTurn = currentTurn !== null && verses.length === 0 && !modeIsEmpty;
+    const needsSchedule = IS_LAMP && mode === 'turnBasedReview' && !hasSchedule && modePoolCount > 0;
     const handleModeChange = (event, newMode) => {
         if (newMode !== null) setters.setMode(newMode);
     };
@@ -75,6 +102,50 @@ const ReviewDashboard = ({
         if (fontType === 'batang') return { ...baseStyle, fontFamily: "'Gowun Batang', serif" };
         return { ...baseStyle, fontFamily: "sans-serif" };
     }, [fontType]);
+
+    if (IS_LAMP) {
+        return (
+            <Box sx={{ maxWidth: 'sm', mx: 'auto', width: '100%', pt: 1, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {favoriteVerse && (
+                    <Box sx={{ backgroundImage: THEMES[themeKey], color: 'white', borderRadius: 1, px: 2.5, py: 2.25, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Typography sx={{ fontFamily: "'Nanum Myeongjo', serif", fontWeight: 700, fontSize: '1.05rem', opacity: 0.85 }}>{favoriteVerse.장절}</Typography>
+                        <Typography sx={{ ...fontStyle, fontWeight: 700, lineHeight: 1.65, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{favoriteVerse.본문}</Typography>
+                        {favoriteVerse.제목 && <Typography variant="body2" sx={{ alignSelf: 'flex-end', opacity: 0.75 }}>{favoriteVerse.제목}</Typography>}
+                    </Box>
+                )}
+                <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.75 }}>복습 방식</Typography>
+                    <ToggleButtonGroup value={settings.mode} exclusive onChange={handleModeChange} aria-label="빠른 모드 선택" fullWidth size="small" sx={{ bgcolor: 'background.paper' }}>
+                        <ToggleButton value="turnBasedReview">차수별 복습</ToggleButton>
+                        <ToggleButton value="turnBasedNew">새 구절</ToggleButton>
+                        <ToggleButton value="turnBasedRecent">최근 구절</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+                <Paper variant="outlined" sx={{ p: 2.5 }}>
+                    <Typography variant="h6" sx={{ mb: 1.5 }}>오늘의 복습</Typography>
+                    {modeIsEmpty ? (
+                        <Typography color="text.secondary" sx={{ py: 1 }}>{LAMP_EMPTY_HINT[mode]}</Typography>
+                    ) : (
+                        <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
+                    )}
+                    {needsSchedule && (
+                        <Box sx={{ mt: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                            <Typography variant="body2" sx={{ flex: '1 1 200px' }}>차수의 시작일과 마감일을 정하면 하루에 볼 분량을 나눠 줍니다.</Typography>
+                            <Button variant="outlined" size="small" onClick={onOpenSchedule}>일정 정하기</Button>
+                        </Box>
+                    )}
+                    <Button variant="contained" size="large" startIcon={<PlayCircleFilledIcon />} onClick={onStartReview} disabled={verses.length === 0} sx={{ mt: 2, width: '100%', py: 1.3 }}>
+                        복습 시작하기
+                    </Button>
+                    {canAdvanceTurn && (
+                        <Button variant="outlined" size="large" startIcon={<RestartAltIcon />} onClick={() => onAdvanceTurn && onAdvanceTurn(mode)} sx={{ mt: 1, width: '100%', py: 1.2 }}>
+                            {currentTurn}차를 마쳤습니다 · {currentTurn + 1}차 시작하기
+                        </Button>
+                    )}
+                </Paper>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ height: 'calc(100vh - 57px - var(--sat))', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>

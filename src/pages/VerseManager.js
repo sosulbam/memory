@@ -32,6 +32,11 @@ import { saveDataToLocal, loadDataFromLocal } from '../api/localStorageApi';
 import { getAllRecordings, saveRecording, clearAllRecordings } from '../api/audioStorage';
 import { VERSES_DATA_KEY, TAGS_DATA_KEY, REVIEW_STATUS_KEY, REVIEW_LOG_KEY, TURN_SCHEDULE_KEY, LAST_APP_STATE_KEY, THEME_PREFERENCE_KEY } from '../constants';
 import { useDebounce } from '../hooks/useDebounce';
+import { IS_LAMP } from '../edition';
+
+// 등불판: 브라우저 기본 「파일 선택 / 선택된 파일 없음」이 단추 안에 비치지 않게 진짜 input 을 숨긴다(검토 17번)
+const HiddenFileInput = (props) => <input {...props} hidden style={{ display: 'none' }} />;
+const FileField = IS_LAMP ? HiddenFileInput : Input;
 
 const getTodayDateString = () => {
   const today = new Date();
@@ -56,9 +61,19 @@ function VerseRow({ verse, onEdit, onDelete, onTagOpen, listFontSize }) {
         <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer', fontSize: fs.title }}>{verse.제목}</TableCell>
         <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer', fontSize: fs.ref }}>{verse.장절}</TableCell>
         <TableCell align="center">
+          {IS_LAMP ? (
+            // 등불판: 한 줄로, 휴지통은 떼어 놓고 이름을 단다(검토 18번)
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+              <IconButton size="small" onClick={() => onEdit(verse)} aria-label="고치기" title="고치기"><EditIcon fontSize="small" /></IconButton>
+              <IconButton size="small" onClick={() => onTagOpen(verse)} aria-label="태그" title="태그"><LabelIcon fontSize="small" /></IconButton>
+              <Box sx={{ width: '1px', height: 20, bgcolor: 'divider', mx: 1 }} />
+              <IconButton size="small" color="error" onClick={() => onDelete(verse.id)} aria-label="지우기" title="지우기"><DeleteIcon fontSize="small" /></IconButton>
+            </Box>
+          ) : (<>
           <IconButton size="small" onClick={() => onEdit(verse)}><EditIcon fontSize="small" /></IconButton>
           <IconButton size="small" color="secondary" onClick={() => onTagOpen(verse)}><LabelIcon fontSize="small" /></IconButton>
           <IconButton size="small" color="error" onClick={() => onDelete(verse.id)}><DeleteIcon fontSize="small" /></IconButton>
+          </>)}
         </TableCell>
       </TableRow>
       <TableRow>
@@ -111,6 +126,12 @@ function VerseManager() {
   const debouncedTagSearchText = useDebounce(filters.tagSearchText, 300);
 
   useEffect(() => { if (originalVerses) setVerses(originalVerses); }, [originalVerses]);
+  // 등불판 첫 화면 「백업 파일에서 되살리기」(/manage#backup) → 백업 구역으로
+  useEffect(() => {
+    if (!IS_LAMP || isLoading || window.location.hash !== '#backup') return;
+    const t = setTimeout(() => document.getElementById('backup')?.scrollIntoView({ block: 'start' }), 50);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   const allVerses = useMemo(() => originalVerses || [], [originalVerses]);
 
@@ -704,6 +725,7 @@ function VerseManager() {
 
   if (isLoading) return <Container sx={{ py: 5, textAlign: 'center' }}><CircularProgress /></Container>;
 
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}><Alert severity={snackbar.severity}>{snackbar.message}</Alert></Snackbar>
@@ -749,9 +771,9 @@ function VerseManager() {
                   : 'ID가 동일한 구절은 건너뛰고 새 구절만 추가합니다.'}
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} size="small">
+              <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} size="small" sx={IS_LAMP ? { whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' } : undefined}>
                 {selectedFile ? selectedFile.name : '엑셀 파일 선택'}
-                <Input type="file" accept=".xlsx, .xls" hidden onChange={handleFileSelect} />
+                <FileField type="file" accept=".xlsx, .xls" hidden onChange={handleFileSelect} />
               </Button>
               <Button
                 variant="contained"
@@ -771,7 +793,7 @@ function VerseManager() {
 
           <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
 
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} id="backup">
             <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>데이터 전체 백업/복원 (ZIP: 데이터+녹음)</Typography>
 
             <Button
@@ -791,9 +813,9 @@ function VerseManager() {
               <Button variant="outlined" color="primary" startIcon={<FolderZipIcon />} size="small" onClick={handleAudioPackExport}>
                 오디오팩만 내보내기
               </Button>
-              <Button component="label" variant="outlined" color="primary" startIcon={<FolderZipIcon />} size="small">
-                오디오팩만 가져오기
-                <Input type="file" accept=".zip" hidden onChange={handleAudioPackFileSelect} />
+              <Button component="label" variant="outlined" color="primary" startIcon={<FolderZipIcon />} size="small" sx={IS_LAMP ? { whiteSpace: 'nowrap' } : undefined}>
+                {IS_LAMP && selectedAudioPackFile ? selectedAudioPackFile.name : '오디오팩만 가져오기'}
+                <FileField type="file" accept=".zip" hidden onChange={handleAudioPackFileSelect} />
               </Button>
               <Button variant="contained" color="success" size="small" onClick={handleAudioPackImport} disabled={!selectedAudioPackFile}>
                 적용
@@ -804,13 +826,13 @@ function VerseManager() {
               <Button variant="contained" color="primary" startIcon={<SaveIcon />} onClick={handleFullBackup} size="small">전체 백업</Button>
               {/* --- [추가] 데이터만 백업 버튼 --- */}
               <Button variant="outlined" color="primary" startIcon={<DescriptionIcon />} onClick={handleDataOnlyBackup} size="small">데이터만 백업 (JSON)</Button>
-              <Button component="label" variant="outlined" color="primary" startIcon={<RestoreIcon />} size="small">
+              <Button component="label" variant="outlined" color="primary" startIcon={<RestoreIcon />} size="small" sx={IS_LAMP ? { whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', display: 'inline-block' } : undefined}>
                 {selectedBackupFile ? selectedBackupFile.name : '백업파일 선택'}
-                <Input type="file" accept=".zip" hidden onChange={handleBackupFileSelect} />
+                <FileField type="file" accept=".zip" hidden onChange={handleBackupFileSelect} />
               </Button>
               <Button variant="contained" color="warning" onClick={handleFullRestore} disabled={!selectedBackupFile || isSaving} size="small">복원하기</Button>
             </Stack>
-            <Button variant="outlined" color="error" startIcon={<RestartAltIcon />} onClick={handleResetAllData} size="small" sx={{ mt: 1 }}>시스템 초기화</Button>
+            {!IS_LAMP && <Button variant="outlined" color="error" startIcon={<RestartAltIcon />} onClick={handleResetAllData} size="small" sx={{ mt: 1 }}>시스템 초기화</Button>}
           </Grid>
         </Grid>
       </Paper>
@@ -836,7 +858,7 @@ function VerseManager() {
       {viewType === 'list' ? (
         <TableContainer component={Paper} elevation={3}>
           <Table stickyHeader size="small">
-            <TableHead><TableRow sx={{ '& th': { fontWeight: 'bold' } }}><TableCell>제목</TableCell><TableCell>장절</TableCell><TableCell align="center">관리</TableCell></TableRow></TableHead>
+            <TableHead><TableRow sx={{ '& th': { fontWeight: 'bold' } }}><TableCell>제목</TableCell><TableCell>장절</TableCell><TableCell align="center">{IS_LAMP ? '고치기 · 태그 · 지우기' : '관리'}</TableCell></TableRow></TableHead>
             <TableBody>
               {filteredVerses.slice(pagination.page * pagination.rowsPerPage, (pagination.page + 1) * pagination.rowsPerPage).map((v) => (
                 <VerseRow key={v.id} verse={v} onEdit={handleEdit} onDelete={handleDelete} onTagOpen={openTagDialog} listFontSize={listFontSize} />
@@ -858,9 +880,10 @@ function VerseManager() {
                   </CardContent>
                   <Collapse in={expandedCardId === v.id} timeout="auto" unmountOnExit>
                     <Box sx={{ p: 1, display: 'flex', justifyContent: 'center', gap: 1, borderTop: '1px solid #eee' }}>
-                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEdit(v); }}><EditIcon fontSize="small" /></IconButton>
-                      <IconButton size="small" color="secondary" onClick={(e) => { e.stopPropagation(); openTagDialog(v); }}><LabelIcon fontSize="small" /></IconButton>
-                      <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}><DeleteIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" aria-label="고치기" onClick={(e) => { e.stopPropagation(); handleEdit(v); }}><EditIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" aria-label="태그" color="secondary" onClick={(e) => { e.stopPropagation(); openTagDialog(v); }}><LabelIcon fontSize="small" /></IconButton>
+                      {IS_LAMP && <Box sx={{ width: 24 }} />}
+                      <IconButton size="small" aria-label="지우기" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(v.id); }}><DeleteIcon fontSize="small" /></IconButton>
                     </Box>
                   </Collapse>
                 </Card>
@@ -871,6 +894,14 @@ function VerseManager() {
       )}
 
       <TablePagination rowsPerPageOptions={[10, 25, 50]} component="div" count={filteredVerses.length} rowsPerPage={pagination.rowsPerPage} page={pagination.page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+
+      {IS_LAMP && (
+        <Paper variant="outlined" sx={{ mt: 6, p: 2, borderColor: 'error.main' }}>
+          <Typography variant="subtitle2" sx={{ color: 'error.main', fontWeight: 700 }}>위험 구역</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ my: 1 }}>이 기기에 있는 구절·복습 기록·태그·녹음·설정을 모두 지웁니다. 되돌릴 수 없으니 먼저 「전체 백업」을 받아 두세요.</Typography>
+          <Button variant="outlined" color="error" startIcon={<RestartAltIcon />} onClick={handleResetAllData} size="small">모든 데이터 지우기</Button>
+        </Paper>
+      )}
 
       <Dialog open={tagDialogOpen} onClose={closeTagDialog} fullWidth maxWidth="sm">
         <DialogTitle>태그 관리: {tagEditVerse?.제목}</DialogTitle>

@@ -12,7 +12,7 @@ import ReviewSession from '../components/ReviewSession';
 import TagDialog from '../components/TagDialog';
 import { THEMES } from '../constants';
 import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import { IS_LAMP } from '../edition';
 
 const HomePage = () => {
@@ -38,7 +38,8 @@ const HomePage = () => {
 
     const schedule = turnScheduleData[settings.targetTurn];
     if (!schedule || !schedule.startDate || !schedule.endDate) {
-      setTodaysGoal(0);
+      // 등불판: 일정이 없으면 하루 분량을 내지 않는다(「오늘 0개·진행률 100%」 대신 일정 안내, 검토 7번)
+      setTodaysGoal(IS_LAMP ? null : 0);
       return;
     }
     const { selectedCategories, selectedSubcategories } = settings;
@@ -55,7 +56,7 @@ const HomePage = () => {
     const today = new Date();
     [startDate, endDate, today].forEach(d => d.setHours(0, 0, 0, 0));
 
-    if (today < startDate || today > endDate) { setTodaysGoal(0); return; }
+    if (today < startDate || today > endDate) { setTodaysGoal(IS_LAMP ? null : 0); return; }
 
     const totalDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const elapsedDays = Math.round((today - startDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -79,9 +80,24 @@ const HomePage = () => {
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
+  const outlet = useOutletContext() || {};
+
+  // 등불판: 지금 모드에 들어 있는 구절 수(완료 여부와 무관). 0이면 「완주」 대신 「이 모드에 구절이 없습니다」(검토 3번)
+  const modePoolCount = useMemo(() => {
+    if (!originalVerses) return 0;
+    const { selectedCategories, selectedSubcategories } = settings;
+    const inCat = v => (selectedCategories.includes('전체') || selectedCategories.length === 0 || selectedCategories.includes(v.카테고리)) && (selectedSubcategories.includes('전체') || selectedSubcategories.length === 0 || selectedSubcategories.includes(v.소카테고리));
+    const active = originalVerses.filter(v => !v.미암송여부);
+    if (mode === 'turnBasedReview') return active.filter(v => !v.뉴구절여부 && !v.최근구절여부 && inCat(v)).length;
+    if (mode === 'turnBasedNew') return active.filter(v => v.뉴구절여부 && inCat(v)).length;
+    if (mode === 'turnBasedRecent') return active.filter(v => v.최근구절여부 && inCat(v)).length;
+    return active.length;
+  }, [originalVerses, mode, settings]);
+  const hasSchedule = !!(turnScheduleData && turnScheduleData[targetTurn] && turnScheduleData[targetTurn].startDate && turnScheduleData[targetTurn].endDate);
 
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
+    if (IS_LAMP && todaysGoal === null) return null;
     if (isFocusMode) return Math.max(0, sessionTodaysGoal - sessionStats.sessionCompletedCount);
     if (todaysGoal === null) return null;
     return Math.max(0, todaysGoal);
@@ -172,7 +188,8 @@ const HomePage = () => {
         </Typography>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Button component={RouterLink} to="/packs" variant="contained" size="large">암송 팩에서 고르기</Button>
-          <Button component={RouterLink} to="/manage" variant="outlined" size="large">직접 넣기 · 엑셀 · 백업 복원</Button>
+          <Button component={RouterLink} to="/manage" variant="outlined" size="large">구절 직접 넣기 · 엑셀</Button>
+          <Button component={RouterLink} to="/manage#backup" variant="text" size="large">백업 파일에서 되살리기</Button>
         </Box>
       </Container>
     );
@@ -197,6 +214,9 @@ const HomePage = () => {
             favoriteVerse={favoriteVerse} themeKey={themeKey}
             onStartReview={() => { setSessionTodaysGoal(todaysGoal); setIsFocusMode(true); }}
             onAdvanceTurn={handleAdvanceTurn}
+            modePoolCount={modePoolCount}
+            hasSchedule={hasSchedule}
+            onOpenSchedule={() => outlet.setDrawerOpen && outlet.setDrawerOpen(true, { setup: true })}
           />
           <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Container>

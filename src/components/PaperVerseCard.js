@@ -51,7 +51,7 @@ const WrongStamp = ({ verse }) => (verse?.오답여부 ? (
 // 앞면: 장절만
 export const PaperFront = ({ verse, fontSize }) => (
   <Deck>
-    <Box sx={{ ...faceSx, minHeight: { xs: 190, sm: 230 }, justifyContent: 'center', alignItems: 'center' }}>
+    <Box className="paper-face" sx={{ ...faceSx, minHeight: { xs: 190, sm: 230 }, justifyContent: 'center', alignItems: 'center' }}>
       <Typography component="div" sx={{ fontFamily: CARD_FONT, fontWeight: 800, letterSpacing: '-0.01em', textAlign: 'center', wordBreak: 'keep-all', fontSize: REF_SIZE[fontSize] || REF_SIZE.medium }}>
         {formatRefFull(verse.장절)}
       </Typography>
@@ -65,7 +65,7 @@ export const PaperBack = ({ verse, fontSize }) => {
   const sub = verse.소카테고리 && verse.소카테고리 !== verse.카테고리 ? `${verse.카테고리} · ${verse.소카테고리}` : verse.카테고리;
   return (
     <Deck>
-      <Box sx={{ ...faceSx, minHeight: { xs: 190, sm: 230 } }}>
+      <Box className="paper-face" sx={{ ...faceSx, minHeight: { xs: 190, sm: 230 } }}>
         <Typography component="div" sx={{ fontFamily: CARD_FONT, fontWeight: 800, pr: verse.오답여부 ? 5 : 0, fontSize: TITLE_SIZE[fontSize] || TITLE_SIZE.medium }}>
           {verse.제목}
         </Typography>

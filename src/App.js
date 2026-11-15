@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Box, Typography, IconButton, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -43,14 +43,25 @@ const pageTitles = {
   '/tree': '🌳 구절 구조 보기',
   '/packs': '📦 암송 팩',
 };
+// 등불판 제목은 이모지 없이(사이트 톤)
+const LAMP_PAGE_TITLES = {
+  '/': APP_NAME, '/stats': '복습 통계', '/list': '구절 목록', '/manage': '구절 관리', '/tags': '태그 관리',
+  '/guide': '사용 안내', '/log': '복습 기록', '/test': '암송 시험', '/settings': '설정', '/tree': '구절 구조 보기', '/packs': '암송 팩',
+};
 
 // AppLayout: 모든 페이지에 공통 UI 적용
 const AppLayout = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpenState] = useState(false);
+  // 「일정 정하기」처럼 서랍을 열며 복습 설정을 펼쳐야 할 때 { setup: true }
+  const [drawerFocus, setDrawerFocus] = useState(null);
+  const setDrawerOpen = useCallback((open, focus = null) => { setDrawerFocus(open ? focus : null); setDrawerOpenState(open); }, []);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [swRegistration, setSwRegistration] = useState(null);
 
   const location = useLocation();
+
+  // 등불판: 화면을 옮기면 맨 위부터(앞 화면 스크롤 위치가 이어지지 않게)
+  useEffect(() => { if (IS_LAMP) window.scrollTo(0, 0); }, [location.pathname]);
   const { settings, setters } = useAppSettings();
   const { resetReviewStatus } = useContext(DataContext);
   const { showSnackbar } = useSnackbar();
@@ -82,7 +93,7 @@ const AppLayout = () => {
     if (type === 'all' || type === 'all_turns_recent') setters.setTargetTurnForRecent(1);
   };
 
-  const title = pageTitles[location.pathname] || '말씀사랑';
+  const title = (IS_LAMP ? LAMP_PAGE_TITLES : pageTitles)[location.pathname] || APP_NAME;
   const isHomePage = location.pathname === '/';
 
   return (
@@ -91,6 +102,7 @@ const AppLayout = () => {
         open={drawerOpen} 
         onClose={() => setDrawerOpen(false)} 
         onResetDialogOpen={() => setResetDialogOpen(true)}
+        focus={drawerFocus}
         settings={settings}
         setters={setters}
       />
@@ -102,20 +114,28 @@ const AppLayout = () => {
         p: '8px 16px',
         // 폰이 화면을 상태바 밑까지 채워 그릴 때(안드로이드 edge-to-edge) 제목이 가려지지 않게
         pt: 'calc(8px + var(--sat))',
-        borderBottom: '1px solid #eee',
+        borderBottom: IS_LAMP ? '1px solid #E2DFD8' : '1px solid #eee',
         position: 'sticky',
         top: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backgroundColor: IS_LAMP ? 'rgba(248, 246, 241, 0.94)' : 'rgba(255, 255, 255, 0.85)',
         backdropFilter: 'blur(10px)',
         zIndex: 1100,
       }}>
-        <IconButton onClick={() => setDrawerOpen(true)}>
+        <IconButton onClick={() => setDrawerOpen(true)} aria-label="메뉴 열기">
           <MenuIcon />
         </IconButton>
         <Typography 
           variant="h5" 
           component="h1" 
-          sx={{ 
+          sx={IS_LAMP ? {
+            fontWeight: 700,
+            fontSize: '1.3rem',
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            whiteSpace: 'nowrap',
+            color: 'text.primary',
+          } : {
             fontWeight: 'bold',
             position: 'absolute',
             left: '50%',

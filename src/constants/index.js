@@ -1,3 +1,4 @@
+import { IS_LAMP } from '../edition';
 // src/constants/index.js
 
 /**
@@ -33,7 +34,20 @@ export const LAST_APP_STATE_KEY = 'recitation-app-last-app-state';
 export const VERSELIST_STATE_KEY = 'recitation-app-verselist-state';
 export const VERSETREE_PREFS_KEY = 'recitation-app-versetree-prefs';
 
-export const THEMES = {
+// 등불판 테마: 그라데이션 대신 한 가지 색(사이트 톤). 키는 기본판과 같게 둬 저장된 값이 그대로 통한다
+const flat = (c) => `linear-gradient(${c}, ${c})`;
+const LAMP_THEMES = {
+  deepsea: flat('#1F1F1D'),   // 먹
+  midnight: flat('#1F2834'),  // 남색
+  forest: flat('#22312A'),    // 숲
+  twilight: flat('#3A2E29'),  // 밤색
+  olive: flat('#55524C'),     // 회색 (완료 구절 보기에도 쓰임)
+};
+export const THEME_LABELS = IS_LAMP
+  ? { deepsea: '먹', midnight: '남색', forest: '숲', twilight: '밤색', olive: '회색' }
+  : {};
+
+const DEFAULT_THEMES = {
   green: 'linear-gradient(135deg, #71b280, #acd89d)',
   blue: 'linear-gradient(135deg, #5a8dee, #8ac6f2)',
   deepsea: 'linear-gradient(135deg, #2c3e50, #4ca1af)',
@@ -43,6 +57,7 @@ export const THEMES = {
   forest: 'linear-gradient(135deg, #0f2027, #2c5364)',   // 숲
   olive: 'linear-gradient(135deg, #8E9EAB, #DAD4CC)',
 };
+export const THEMES = IS_LAMP ? LAMP_THEMES : DEFAULT_THEMES;
 
 // --- [신규] 성경 약어 매핑 (TTS용) ---
 export const BIBLE_BOOKS = {

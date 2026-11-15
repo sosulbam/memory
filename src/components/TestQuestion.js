@@ -6,13 +6,21 @@ import { normalizeText } from '../utils/textUtils';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import { IS_LAMP } from '../edition';
 
 const DiffResult = ({ original, userInput }) => {
   const differences = diffChars(original, userInput);
   return (
     <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, p: 1, background: '#f5f5f5', borderRadius: 1, mt: 1 }}>
       {differences.map((part, index) => {
-        const style = {
+        // 등불판: 빠진 글자는 주황 밑줄(맞은 것처럼 보이던 초록 굵은 글씨 대신), 다르게 쓴 글자는 빨간 줄
+        const style = IS_LAMP ? {
+          backgroundColor: part.added ? '#FBEAE8' : part.removed ? '#FFF3E0' : 'transparent',
+          textDecoration: part.added ? 'line-through' : part.removed ? 'underline' : 'none',
+          textUnderlineOffset: 3,
+          color: part.added ? '#A3271F' : part.removed ? '#8A5A12' : 'inherit',
+          fontWeight: part.removed ? 'bold' : 'normal',
+        } : {
           backgroundColor: part.added ? '#ffebee' : part.removed ? '#e8f5e9' : 'transparent',
           textDecoration: part.added ? 'line-through' : 'none',
           color: part.added ? '#d32f2f' : part.removed ? '#2e7d32' : 'inherit',

@@ -7,7 +7,7 @@ import TextDecreaseIcon from '@mui/icons-material/TextDecrease';
 import TextIncreaseIcon from '@mui/icons-material/TextIncrease';
 import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import { useAppSettings } from '../hooks/useAppSettings';
-import { THEMES } from '../constants';
+import { THEMES, THEME_LABELS } from '../constants';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { TOP_OPTIONS, BOTTOM_OPTIONS, BUILD_ID, loadSafeArea, saveSafeArea, measureCss } from '../utils/safeArea';
 
@@ -182,7 +182,7 @@ const SettingsPage = () => {
               }}
             >
               <Typography variant="caption" sx={{ color: 'white', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.6)', fontSize: '0.7rem' }}>
-                {key}
+                {THEME_LABELS[key] || key}
               </Typography>
             </Box>
           ))}

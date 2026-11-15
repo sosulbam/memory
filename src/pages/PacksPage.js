@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Box, Container, Typography, Button, Paper, Stack, Chip, Switch, FormControlLabel,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress, Alert,
+  ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import { DataContext } from '../contexts/DataContext';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -17,6 +18,11 @@ import { VERSES_DATA_KEY, REVIEW_STATUS_KEY, TAGS_DATA_KEY } from '../constants'
 import { PUBLIC_URL } from '../edition';
 
 const normRef = (r) => String(r || '').replace(/\s/g, '');
+
+// 이 화면의 선택은 기기에 기억한다(화면을 옮겼다 와도 그대로, 검토 35번)
+const PREF_KEY = 'recitation-app-packs-prefs';
+const loadPrefs = () => { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } };
+const savePrefs = (p) => { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* 저장 못 해도 동작은 같다 */ } };
 
 const PacksPage = () => {
   const { originalVerses, loadData } = useContext(DataContext);
@@ -27,7 +33,11 @@ const PacksPage = () => {
   const [index, setIndex] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [busyId, setBusyId] = useState(null);
-  const [skipSameRef, setSkipSameRef] = useState(false);
+  // 겹치는 장절 건너뛰기는 기본 꺼짐(부장님: 제목이 다르면 같은 장절도 따로 넣는다)
+  const [skipSameRef, setSkipSameRef] = useState(() => !!loadPrefs().skipSameRef);
+  // 넣을 때 상태: 새로 외울 구절(뉴구절) / 이미 외운 구절(복습) — 기본은 새로 외울 구절(검토 3번)
+  const [asNew, setAsNew] = useState(() => loadPrefs().asNew !== false);
+  useEffect(() => { savePrefs({ skipSameRef, asNew }); }, [skipSameRef, asNew]);
   const [removeTarget, setRemoveTarget] = useState(null);
   const focusRef = useRef(null);
 
@@ -69,13 +79,13 @@ const PacksPage = () => {
         if (ids.has(v.id)) { sameId += 1; return; }
         if (skipSameRef && refs.has(normRef(v.장절))) { sameRef += 1; return; }
         no += 1;
-        added.push({ ...v, 번호: no });
+        added.push(asNew ? { ...v, 번호: no, 뉴구절여부: true } : { ...v, 번호: no });
       });
       if (added.length > 0) {
         saveDataToLocal(VERSES_DATA_KEY, [...list, ...added]);
         await loadData();
       }
-      const parts = [`${pack.name} ${added.length}구절을 넣었습니다`];
+      const parts = [`「${pack.name}」에서 ${added.length}구절을 ${asNew ? '새로 외울 구절로' : '외운 구절로'} 넣었습니다`];
       if (sameId) parts.push(`이미 있던 ${sameId}구절은 그대로 두었습니다`);
       if (sameRef) parts.push(`다른 곳에 같은 장절이 있는 ${sameRef}구절은 건너뛰었습니다`);
       showSnackbar(parts.join(' · '), added.length > 0 ? 'success' : 'info');
@@ -101,7 +111,7 @@ const PacksPage = () => {
       saveDataToLocal(REVIEW_STATUS_KEY, status);
       saveDataToLocal(TAGS_DATA_KEY, tags);
       await loadData();
-      showSnackbar(`${pack.name} ${gone.size}구절을 뺐습니다`, 'success');
+      showSnackbar(`「${pack.name}」 ${gone.size}구절을 뺐습니다`, 'success');
     } finally {
       setBusyId(null);
     }
@@ -110,17 +120,31 @@ const PacksPage = () => {
   return (
     <Container maxWidth="md" sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 'calc(24px + var(--sab))', sm: 'calc(32px + var(--sab))' } }}>
       <Typography variant="body1" sx={{ mb: 1 }}>
-        필요한 시리즈만 골라 넣으세요. 넣은 팩은 구절 구조 보기에서 분류째 보입니다.
+        필요한 시리즈만 골라 넣으세요. 넣은 팩은 구절 구조 보기에서 분류째 보입니다. 더 쓰지 않는 팩은 여기서 「빼기」로 뺍니다.
       </Typography>
       <Typography variant="body2" color="text.secondary">
         {index ? `${index.source} · 본문 ${index.translation}` : '구절 선정: 네비게이토 암송 시리즈 · 본문 개역한글'}
       </Typography>
 
-      <FormControlLabel
-        sx={{ mt: 1.5, mb: 1 }}
-        control={<Switch checked={skipSameRef} onChange={(e) => setSkipSameRef(e.target.checked)} />}
-        label={<Typography variant="body2">다른 팩이나 직접 넣은 구절과 장절이 같으면 건너뛰기</Typography>}
-      />
+      <Paper variant="outlined" sx={{ mt: 2, p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 0.75 }}>넣는 구절을</Typography>
+          <ToggleButtonGroup exclusive fullWidth size="small" value={asNew ? 'new' : 'known'} onChange={(e, v) => v && setAsNew(v === 'new')} aria-label="넣는 구절의 상태">
+            <ToggleButton value="new">새로 외울 구절로</ToggleButton>
+            <ToggleButton value="known">이미 외운 구절로</ToggleButton>
+          </ToggleButtonGroup>
+          <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.75 }}>
+            {asNew ? '홈의 「새 구절」에서 차수별로 외웁니다. 다 외우면 구절의 상태에서 「새 구절」을 풀어 복습으로 옮깁니다.' : '홈의 「차수별 복습」에서 바로 복습합니다.'}
+          </Typography>
+        </Box>
+        <FormControlLabel
+          control={<Switch checked={skipSameRef} onChange={(e) => setSkipSameRef(e.target.checked)} />}
+          label={<Typography variant="body2">겹치는 장절 건너뛰기</Typography>}
+        />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
+          켜면 이미 들어 있는 장절은 다른 팩에서 넣지 않습니다. 끄면 제목이 다른 같은 장절도 시리즈대로 따로 들어갑니다.
+        </Typography>
+      </Paper>
 
       {loadError && <Alert severity="warning" sx={{ my: 2 }}>팩 목록을 받지 못했습니다. 인터넷에 연결된 상태에서 다시 열어 주세요.</Alert>}
       {!index && !loadError && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress size={28} /></Box>}
@@ -162,8 +186,8 @@ const PacksPage = () => {
         <DialogTitle>{removeTarget?.name} 빼기</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            이 팩의 {removeTarget?.have}구절과 그 구절들의 복습 기록·태그가 지워집니다. 직접 넣은 구절과 다른 팩은 그대로 남습니다.
-            나중에 다시 넣으면 구절은 돌아오지만 복습 기록은 처음부터입니다.
+            이 팩의 {removeTarget?.have}구절과 그 구절들의 차수·오답·태그 표시를 지웁니다. 날마다 몇 구절 복습했는지 남긴 통계는 그대로 남습니다.
+            직접 넣은 구절과 다른 팩도 그대로입니다. 나중에 다시 넣으면 구절은 돌아오지만 차수는 처음부터입니다.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

@@ -1,4 +1,5 @@
 // src/pages/VerseList.js
+import { IS_LAMP } from '../edition';
 import React, { useEffect, useState, useContext, useMemo, useRef, useCallback } from 'react';
 import { Container, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, ToggleButton, ToggleButtonGroup, Grid, CircularProgress, Collapse, TablePagination, Chip, IconButton, Tooltip, LinearProgress, Button, Dialog, DialogActions, DialogContent, DialogContentText } from '@mui/material';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -503,7 +504,7 @@ function VerseList() {
         <Paper elevation={3}>
           <TableContainer>
             <Table stickyHeader size="small">
-              <TableHead><TableRow sx={{ "& th": { fontWeight: 'bold' } }}><TableCell>제목 / 컨트롤</TableCell><TableCell>장절</TableCell></TableRow></TableHead>
+              <TableHead><TableRow sx={{ "& th": { fontWeight: 'bold' } }}><TableCell>{IS_LAMP ? '제목' : '제목 / 컨트롤'}</TableCell><TableCell>장절</TableCell></TableRow></TableHead>
               <TableBody>
                 {filteredVerses.slice(pagination.page * pagination.rowsPerPage, (pagination.page + 1) * pagination.rowsPerPage).map((v) => (
                   <React.Fragment key={v.id}>

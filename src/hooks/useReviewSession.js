@@ -244,6 +244,20 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
       });
   }, [sessionCompleted, browsableCompletedList]);
 
+  // 「다시」(등불판): 완료로 기록하지 않고 지금 구절을 줄 맨 뒤로 보낸다. 연속 재생의 다음 구절 넘김도 이것을 쓴다
+  const skipCurrent = useCallback(() => {
+    if (isBrowsingCompleted || versesToReview.length === 0) return;
+    setShowAnswer(false);
+    if (versesToReview.length === 1) return;
+    setVersesToReview(prev => {
+      const i = Math.min(index, prev.length - 1);
+      const next = [...prev];
+      const [cur] = next.splice(i, 1);
+      next.push(cur);
+      return next;
+    });
+  }, [isBrowsingCompleted, versesToReview.length, index]);
+
   const handleMarkAsReviewed = useCallback(() => {
     if (!versesToReview[index] || mode === 'pending' || isBrowsingCompleted) return;
     const verseToComplete = versesToReview[index];
@@ -332,7 +346,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
     isBrowsingCompleted,
     isPeeking,
     isTurnCompleted,
-    actions: { toggleAnswer, handleMarkAsReviewed, updateVerseInPlace, updateCompletedVerse, toggleBrowseMode, browseNext, browsePrev, peekPrev, peekNext, exitPeek },
+    actions: { toggleAnswer, handleMarkAsReviewed, skipCurrent, updateVerseInPlace, updateCompletedVerse, toggleBrowseMode, browseNext, browsePrev, peekPrev, peekNext, exitPeek },
     resetTurnCompletion,
   };
 };

@@ -1,4 +1,5 @@
 // src/pages/UsageGuide.js
+import { IS_LAMP } from '../edition';
 import React from 'react';
 import { Container, Typography, Box, Divider, Paper, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails, Chip } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -31,7 +32,7 @@ function UsageGuide() {
         <List dense>
             <ListItem><ListItemText primary="현재 복습 설정 확인" secondary="'오늘의 복습' 카드에서는 현재 선택된 복습 모드, 정렬 방식, 카테고리, 진행 상태 등 상세한 정보를 한눈에 볼 수 있어, 내가 어떤 설정을 통해 복습하고 있는지 명확히 알 수 있습니다." /></ListItem>
             <ListItem><ListItemText primary="복습 시작하기" secondary="버튼을 누르면 '집중 모드'로 전환되어 다른 메뉴 없이 암송 카드에만 집중할 수 있습니다." /></ListItem>
-            <ListItem><ListItemText primary="암송 카드 조작법" secondary={<>• <Chip size="small" label="카드 클릭"/> 또는 <Chip size="small" label="s"/> 키: 정답(본문) 확인<br />• <Chip size="small" label="좌우 스와이프"/> 또는 <Chip size="small" label="Enter"/> 키: 암송 완료 처리 후 다음 카드로 이동<br />• <Chip size="small" label="위로 스와이프"/>: 구절 상태(뉴구절, 오답 등) 변경 메뉴 열기</>} /></ListItem>
+            <ListItem><ListItemText primary="암송 카드 조작법" secondary={IS_LAMP ? <>• 카드를 누르면 앞면(장절)과 뒷면(본문)이 바뀝니다<br />• 아래 <b>외웠어요</b>: 완료로 기록하고 다음 구절로(카드를 왼쪽으로 밀어도 같음)<br />• 아래 <b>다시</b>: 완료로 기록하지 않고 맨 뒤로 보냄<br />• 카드를 오른쪽으로 밀면 방금 완료한 구절을 다시 봄<br />• 아래 <b>상태</b>(또는 위로 밀기): 새 구절·오답·즐겨찾기·태그·복사<br />• 연속 재생은 듣기만 하며 완료로 기록하지 않음</> : <>• <Chip size="small" label="카드 클릭"/> 또는 <Chip size="small" label="s"/> 키: 정답(본문) 확인<br />• <Chip size="small" label="좌우 스와이프"/> 또는 <Chip size="small" label="Enter"/> 키: 암송 완료 처리 후 다음 카드로 이동<br />• <Chip size="small" label="위로 스와이프"/>: 구절 상태(뉴구절, 오답 등) 변경 메뉴 열기</>} /></ListItem>
         </List>
       </GuideSection>
       

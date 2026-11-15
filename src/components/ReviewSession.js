@@ -7,8 +7,28 @@ import TypingView from './TypingView';
 import ActionBar from './ActionBar';
 import TagDialog from './TagDialog';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { IS_LAMP } from '../edition';
 
-const HelpDialog = ({ open, onClose }) => {
+const LampHelpDialog = ({ open, onClose }) => (
+    <Dialog open={open} onClose={onClose} scroll="paper">
+        <DialogTitle>복습 화면 도움말</DialogTitle>
+        <DialogContent dividers>
+            <List dense sx={{ '& .MuiListItem-root': { alignItems: 'flex-start' } }}>
+                <ListItem><ListItemText primary="카드 누르기" secondary="앞면(장절)과 뒷면(본문)을 바꿔 봅니다." /></ListItem>
+                <ListItem><ListItemText primary="외웠어요" secondary="이 구절을 이번 복습에서 완료로 기록하고 다음 구절로 넘어갑니다. 카드를 왼쪽으로 밀어도 같습니다." /></ListItem>
+                <ListItem><ListItemText primary="다시" secondary="완료로 기록하지 않고 이 구절을 맨 뒤로 보냅니다. 나중에 다시 나옵니다." /></ListItem>
+                <ListItem><ListItemText primary="오른쪽으로 밀기" secondary="방금 완료한 구절을 다시 봅니다(기록은 바뀌지 않습니다)." /></ListItem>
+                <ListItem><ListItemText primary="상태" secondary="새 구절·오답·즐겨찾기·태그·복사. 카드를 위로 밀어도 열립니다." /></ListItem>
+                <ListItem><ListItemText primary="연속 재생" secondary="구절을 차례로 읽어 줍니다. 듣기만 하므로 완료로 기록하지 않습니다." /></ListItem>
+                <ListItem><ListItemText primary="완료 보기" secondary="이번 차수에서 이미 완료한 구절을 넘겨 봅니다." /></ListItem>
+                <ListItem><ListItemText primary="PC 단축키" secondary="Space 뒤집기 · Enter 외웠어요 · ← 방금 완료한 구절 · → 돌아오기" /></ListItem>
+            </List>
+        </DialogContent>
+        <DialogActions><Button onClick={onClose}>닫기</Button></DialogActions>
+    </Dialog>
+);
+
+const HelpDialog = IS_LAMP ? LampHelpDialog : ({ open, onClose }) => {
     const Highlight = ({ children }) => <Typography component="span" sx={{ color: 'error.main', fontWeight: 'bold' }}>{children}</Typography>;
     return (
         <Dialog open={open} onClose={onClose} scroll="paper">
@@ -92,10 +112,11 @@ const ReviewSession = ({
             setIsAutoPlaying(shouldPlay);
         } else {
             if (isAutoPlaying && verse) {
-                handleMarkAsReviewed();
+                // 등불판: 연속 재생은 듣기 전용 — 완료로 기록하지 않고 다음 구절로(검토 9번)
+                if (IS_LAMP) actions.skipCurrent(); else handleMarkAsReviewed();
             }
         }
-    }, [isAutoPlaying, verse, handleMarkAsReviewed]);
+    }, [isAutoPlaying, verse, handleMarkAsReviewed, actions]);
 
     useEffect(() => {
         if (verses.length === 0 && isAutoPlaying) {
@@ -209,11 +230,11 @@ const ReviewSession = ({
         versesCount: verses.length, isBrowsingCompleted, onToggleBrowseMode: toggleBrowseMode,
         onFooterClick: () => setIsActionBarVisible(true), currentIndex, remainingToday,
         onHelpClick, actions, dailyProgress,
-        onAutoPlay: handleAutoPlay, isAutoPlaying: isAutoPlaying
+        onAutoPlay: handleAutoPlay, isAutoPlaying: isAutoPlaying, isPeeking
     };
 
     return (
-        <Box {...swipeHandlers} sx={{ minHeight: '100vh', width: '100vw' }}>
+        <Box {...swipeHandlers} sx={{ minHeight: '100vh', width: IS_LAMP ? '100%' : '100vw' }}>
             {reviewView === 'typing' ? (
                 <TypingView {...commonProps} onComplete={isBrowsingCompleted ? browseNext : handleMarkAsReviewed} />
             ) : (

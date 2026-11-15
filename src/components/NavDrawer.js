@@ -2,7 +2,7 @@
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Drawer, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Collapse, Button, FormControl, InputLabel, Select, MenuItem, Typography, Slider } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { THEMES, TURN_SCHEDULE_KEY } from '../constants';
+import { THEMES, THEME_LABELS, TURN_SCHEDULE_KEY } from '../constants';
 import { DataContext } from '../contexts/DataContext';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { saveDataToLocal } from '../api/localStorageApi';
@@ -26,8 +26,10 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import TuneIcon from '@mui/icons-material/Tune';
 
-const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
-  const [openSetup, setOpenSetup] = useState(true);
+const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus }) => {
+  // 등불판은 이동 메뉴를 먼저 보이게 복습 설정을 접어 둔다(「일정 정하기」로 열 때만 펼침)
+  const [openSetup, setOpenSetup] = useState(!IS_LAMP);
+  useEffect(() => { if (open && focus?.setup) setOpenSetup(true); }, [open, focus]);
   const [openTheme, setOpenTheme] = useState(false);
   const [openTTS, setOpenTTS] = useState(false);
 
@@ -138,8 +140,10 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
       <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', height: '100%' }} role="presentation">
         <List>
           <ListItem disablePadding><ListItemButton component={RouterLink} to="/" onClick={onClose}><ListItemIcon>{menuItems[0].icon}</ListItemIcon><ListItemText primary={menuItems[0].text} /></ListItemButton></ListItem>
-          <Divider sx={{ my: 1 }} />
-
+          {IS_LAMP && (
+            <>
+          {menuItems.slice(1).map((item) => (<ListItem key={item.text} disablePadding><ListItemButton component={RouterLink} to={item.path} onClick={onClose}><ListItemIcon>{item.icon}</ListItemIcon><ListItemText primary={item.text} /></ListItemButton></ListItem>))}
+              <Divider sx={{ my: 1 }} />
           <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsIcon /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
           <Collapse in={openSetup} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2 }}>
@@ -195,12 +199,78 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
           <Collapse in={openTheme} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {Object.keys(THEMES).map(key => (
-                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={{ flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{key}</Button>
+                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={IS_LAMP ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
+              ))}
+            </Box>
+          </Collapse>
+            </>
+          )}
+          {!IS_LAMP && (
+            <>
+          <Divider sx={{ my: 1 }} />
+          <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsIcon /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <Collapse in={openSetup} timeout="auto" unmountOnExit>
+            <Box sx={{ p: 2 }}>
+              <ControlPanel settings={settings} setters={setters} displayedCategories={displayedCategories} displayedSubcategories={displayedSubcategories} turnSchedule={(turnScheduleData && turnScheduleData[settings.targetTurn]) || { startDate: '', endDate: '' }} onSaveTurnSchedule={handleSaveTurnSchedule} dailyGoalDisplay={dailyGoalDisplay} turnOptions={turnOptions} />
+            </Box>
+          </Collapse>
+
+          <ListItemButton onClick={() => setOpenTTS(!openTTS)}><ListItemIcon><RecordVoiceOverIcon /></ListItemIcon><ListItemText primary="음성 및 폰트 설정" />{openTTS ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <Collapse in={openTTS} timeout="auto" unmountOnExit>
+            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <FormControl size="small" fullWidth>
+                <InputLabel>폰트 선택</InputLabel>
+                <Select value={fontType} label="폰트 선택" onChange={(e) => setFontType(e.target.value)}>
+                  <MenuItem value="gothic" style={{ fontFamily: 'sans-serif' }}>고딕 (기본)</MenuItem>
+                  <MenuItem value="myeongjo" style={{ fontFamily: "'Nanum Myeongjo', serif", fontWeight: 'bold' }}>나눔 명조</MenuItem>
+                  <MenuItem value="batang" style={{ fontFamily: "'Gowun Batang', serif", fontWeight: 'bold' }}>고운 바탕</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" fullWidth>
+                <InputLabel>음성 읽기 순서</InputLabel>
+                <Select value={ttsOrder} label="음성 읽기 순서" onChange={(e) => setTtsOrder(e.target.value)}>
+                  <MenuItem value="ref-title-body-ref">장절 - 제목 - 본문 - 장절</MenuItem>
+                  <MenuItem value="ref-body-ref">장절 - 본문 - 장절</MenuItem>
+                  <MenuItem value="ref-body">장절 - 본문</MenuItem>
+                  <MenuItem value="body-only">본문만 (참조 없음)</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" fullWidth>
+                <InputLabel>목소리 선택</InputLabel>
+                <Select value={voiceURI || ''} label="목소리 선택" onChange={(e) => setVoiceURI(e.target.value)}>
+                  {voices.map((v) => (<MenuItem key={v.voiceURI} value={v.voiceURI}>{v.name}</MenuItem>))}
+                  {voices.length === 0 && <MenuItem value="" disabled>한국어 음성 없음</MenuItem>}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" fullWidth>
+                <InputLabel>재생 우선순위</InputLabel>
+                <Select value={audioPriority} label="재생 우선순위" onChange={(e) => setAudioPriority(e.target.value)}>
+                  <MenuItem value="recording">녹음 파일 우선 (기본)</MenuItem>
+                  <MenuItem value="tts">TTS 우선 (녹음 무시)</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Box>
+                <Typography variant="caption" color="text.secondary">암송 간격 (장절 후 대기): {ttsInterval}초</Typography>
+                <Slider value={ttsInterval} min={0} max={5} step={0.5} onChange={(e, newVal) => setTtsInterval(newVal)} valueLabelDisplay="auto" size="small" />
+              </Box>
+              <Box><Typography variant="caption" color="text.secondary">읽기 속도: {speechRate}x</Typography><Slider value={speechRate} min={0.5} max={2.0} step={0.1} onChange={(e, newVal) => setSpeechRate(newVal)} valueLabelDisplay="auto" size="small" /></Box>
+            </Box>
+          </Collapse>
+
+          <ListItemButton onClick={() => setOpenTheme(!openTheme)}><ListItemIcon><PaletteIcon /></ListItemIcon><ListItemText primary="테마 설정" />{openTheme ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <Collapse in={openTheme} timeout="auto" unmountOnExit>
+            <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {Object.keys(THEMES).map(key => (
+                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={IS_LAMP ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
               ))}
             </Box>
           </Collapse>
           <Divider sx={{ my: 1 }} />
           {menuItems.slice(1).map((item) => (<ListItem key={item.text} disablePadding><ListItemButton component={RouterLink} to={item.path} onClick={onClose}><ListItemIcon>{item.icon}</ListItemIcon><ListItemText primary={item.text} /></ListItemButton></ListItem>))}
+            </>
+          )}
         </List>
         <Box sx={{ p: 1, mt: 'auto' }}><Button fullWidth variant="outlined" color="error" startIcon={<RestartAltIcon />} onClick={() => { onResetDialogOpen(); onClose(); }}>복습 기록 초기화</Button></Box>
       </Box>

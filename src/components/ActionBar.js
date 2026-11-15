@@ -1,6 +1,8 @@
 // src/components/ActionBar.js
 import React from 'react';
-import { Box, Button } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import { IS_LAMP } from '../edition';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -31,6 +33,35 @@ const ActionBar = ({ verse, onStatusToggle, onTagDialogOpen, onCopy }) => {
     e.stopPropagation(); // 이벤트 전파 중단
     onCopy();
   };
+
+  if (IS_LAMP) {
+    // 등불판: 이모지 없이 같은 모양 단추, 지금 켜진 상태는 채워서 보여 준다(검토 26번)
+    const items = [
+      ...(verse.mode !== 'pending' ? [
+        { field: '뉴구절여부', on: 뉴구절여부, label: '새 구절' },
+        { field: '오답여부', on: 오답여부, label: '오답' },
+        { field: '최근구절여부', on: 최근구절여부, label: '최근' },
+      ] : []),
+      { field: '즐겨찾기', on: 즐겨찾기, label: '즐겨찾기' },
+      { field: '미암송여부', on: 미암송여부, label: '미암송' },
+    ];
+    return (
+      <Box sx={{ px: 2, py: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box display="flex" gap={1} flexWrap="wrap" justifyContent="center">
+          {items.map(it => (
+            <Button key={it.field} onClick={(e) => handleToggle(e, it.field)} variant={it.on ? 'contained' : 'outlined'} size="small" aria-pressed={!!it.on} sx={{ minWidth: 72 }}>
+              {it.label}{it.on ? ' ✓' : ''}
+            </Button>
+          ))}
+        </Box>
+        <Box display="flex" gap={1} justifyContent="center">
+          <Button onClick={handleTagOpen} variant="text" size="small" startIcon={<LocalOfferOutlinedIcon />}>태그</Button>
+          <Button onClick={handleCopy} variant="text" size="small" startIcon={<ContentCopyIcon />}>복사</Button>
+        </Box>
+        <Typography variant="caption" color="text.secondary" align="center">채운 단추가 지금 켜져 있는 상태입니다. 누르면 켜고 끕니다.</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box my={2} display="flex" justifyContent="center" gap={1} flexWrap="wrap">

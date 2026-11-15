@@ -5,6 +5,9 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { applySafeArea, loadSafeArea } from './utils/safeArea';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { IS_LAMP } from './edition';
+import { lampTheme } from './lampTheme';
 
 // 화면 그리기 전에 사용자가 고른 위/아래 여백을 먼저 적용
 applySafeArea(loadSafeArea());
@@ -18,7 +21,12 @@ console.log("2. React root 생성 완료");
 
 root.render(
   <React.StrictMode>
-    <App />
+    {IS_LAMP ? (
+      // 등불판만 사이트와 같은 톤의 테마(먹색·아이보리·명조 제목·한국어 표기). 기본판은 종전 MUI 기본 그대로
+      <ThemeProvider theme={lampTheme}><CssBaseline /><App /></ThemeProvider>
+    ) : (
+      <App />
+    )}
   </React.StrictMode>
 );
 

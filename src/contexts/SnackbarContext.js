@@ -1,6 +1,7 @@
 // src/contexts/SnackbarContext.js
 import React, { createContext, useState, useCallback, useContext } from 'react';
 import { Snackbar, Alert } from '@mui/material';
+import { IS_LAMP } from '../edition';
 
 export const SnackbarContext = createContext(null);
 
@@ -32,7 +33,8 @@ export const SnackbarProvider = ({ children }) => {
         autoHideDuration={4000}
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ mb: 'var(--sab)' }}
+        // 등불판: 집중 모드 아래 단추줄(외웠어요·다시)을 가리지 않게 그만큼 올린다
+        sx={{ mb: IS_LAMP ? 'calc(76px + var(--sab))' : 'var(--sab)' }}
       >
         <Alert onClose={handleClose} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}

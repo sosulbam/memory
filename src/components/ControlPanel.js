@@ -1,5 +1,6 @@
 // src/components/ControlPanel.js
 import React from 'react';
+import { IS_LAMP } from '../edition';
 import {
   Grid,
   FormControl,
@@ -175,12 +176,12 @@ const ControlPanel = ({
                 value={reviewView}
                 exclusive
                 onChange={(e, newView) => { if (newView) setReviewView(newView); }}
-                aria-label="Review View"
+                aria-label={IS_LAMP ? "복습 방식" : "Review View"}
                 size="small"
                 fullWidth
             >
                 <ToggleButton value="card">카드</ToggleButton>
-                <ToggleButton value="typing">타이핑</ToggleButton>
+                <ToggleButton value="typing">{IS_LAMP ? '한 단어씩 보기' : '타이핑'}</ToggleButton>
             </ToggleButtonGroup>
             {reviewView === 'card' && (
               <>
@@ -192,7 +193,7 @@ const ControlPanel = ({
                     value={cardStyle || 'paper'}
                     exclusive
                     onChange={(e, v) => { if (v) setCardStyle(v); }}
-                    aria-label="Card Style"
+                    aria-label={IS_LAMP ? "카드 모양" : "Card Style"}
                     size="small"
                     fullWidth
                 >
@@ -214,7 +215,7 @@ const ControlPanel = ({
                 value={fontSize}
                 exclusive
                 onChange={(e, newSize) => { if (newSize) setFontSize(newSize); }}
-                aria-label="Font Size"
+                aria-label={IS_LAMP ? "글자 크기" : "Font Size"}
                 size="small"
                 fullWidth
             >

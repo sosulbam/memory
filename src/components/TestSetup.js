@@ -1,4 +1,5 @@
 // src/components/TestSetup.js
+import { IS_LAMP } from '../edition';
 import React, { useState, useMemo } from 'react';
 import { Box, Button, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Paper, Alert } from '@mui/material';
 
@@ -51,13 +52,13 @@ const TestSetup = ({ categories, allVerses, onStartTest }) => {
         암송 시험 설정
       </Typography>
       <FormControl fullWidth margin="normal">
-        <InputLabel>테스트 범위 (카테고리)</InputLabel>
+        <InputLabel>{IS_LAMP ? "시험 범위 (분류)" : "테스트 범위 (카테고리)"}</InputLabel>
         <Select
           multiple
           value={selectedCategories}
           onChange={handleCategoryChange}
           renderValue={(selected) => selected.join(', ')}
-          label="테스트 범위 (카테고리)"
+          label={IS_LAMP ? "시험 범위 (분류)" : "테스트 범위 (카테고리)"}
         >
           <MenuItem value="전체"><em>전체</em></MenuItem>
           {categories.map((cat) => (
@@ -87,7 +88,7 @@ const TestSetup = ({ categories, allVerses, onStartTest }) => {
         선택 범위 내 암송 구절: {availableVerses.length}개
       </Typography>
       <Button variant="contained" size="large" fullWidth onClick={handleStartClick}>
-        테스트 시작
+        {IS_LAMP ? '시험 시작' : '테스트 시작'}
       </Button>
     </Paper>
   );

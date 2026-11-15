@@ -1,4 +1,5 @@
 // src/pages/TagManager.js
+import { IS_LAMP } from '../edition';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Container, Typography, Box, Paper, List, ListItem, ListItemText,
@@ -159,7 +160,7 @@ function TagManager() {
                 </List>
             </Paper>
         ) : (
-            <Typography align="center" color="text.secondary" sx={{ mt: 5 }}>검색된 태그가 없습니다.</Typography>
+            <Typography align="center" color="text.secondary" sx={{ mt: 5 }}>{IS_LAMP ? '아직 붙인 태그가 없습니다. 복습 화면의 「상태」 → 태그, 또는 구절 관리 목록의 태그 단추에서 구절마다 붙일 수 있습니다.' : '검색된 태그가 없습니다.'}</Typography>
         )}
         
         <Dialog open={editDialogOpen} onClose={handleCloseEditDialog} fullWidth maxWidth="xs">
