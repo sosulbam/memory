@@ -1,5 +1,5 @@
 // src/components/TestSetup.js
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 import React, { useState, useMemo } from 'react';
 import { Box, Button, FormControl, InputLabel, Select, MenuItem, TextField, Typography, Paper, Alert } from '@mui/material';
 
@@ -48,7 +48,7 @@ const TestSetup = ({ categories, allVerses, onStartTest }) => {
 
   return (
     <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, mt: 4 }}>
-      <Typography variant={IS_LAMP ? "h6" : "h4"} gutterBottom align={IS_LAMP ? "left" : "center"} sx={{ fontWeight: 'bold' }}>
+      <Typography variant={LAMP_LOOK ? "h6" : "h4"} gutterBottom align={LAMP_LOOK ? "left" : "center"} sx={{ fontWeight: 'bold' }}>
         암송 시험 설정
       </Typography>
       <FormControl fullWidth margin="normal">

@@ -1,5 +1,5 @@
 // src/pages/Stats.js
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 import { T } from '../terms';
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
@@ -74,7 +74,7 @@ function Stats() {
   }, [period]);
 
   const totalForPeriod = useMemo(() => stats.dailyReviewCounts.reduce((sum, day) => sum + day.count, 0), [stats.dailyReviewCounts]);
-  const HighlightedCount = ({ value }) => <Box component="span" sx={{ fontWeight: 'bold', color: value > 0 && !IS_LAMP ? 'error.main' : 'inherit' }}>{value}</Box>;
+  const HighlightedCount = ({ value }) => <Box component="span" sx={{ fontWeight: 'bold', color: value > 0 && !LAMP_LOOK ? 'error.main' : 'inherit' }}>{value}</Box>;
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /><Typography sx={{ ml: 2 }}>통계 데이터를 불러오는 중...</Typography></Box>;
 
@@ -84,8 +84,8 @@ function Stats() {
         <Grid item xs={12} md={6}>
           {IS_LAMP ? (
             // 등불판: 숫자를 한 묶음으로(새 구절·최근·복습 구절의 합 = 외우는 구절) — 서로 어긋나 보이던 「기존 암송」 셈은 뺀다(N9)
-            <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>전체 구절</Typography>
+            <Paper elevation={LAMP_LOOK ? 0 : 3} variant={LAMP_LOOK ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>{LAMP_LOOK ? '전체 구절' : '전체 구절 현황'}</Typography>
               <Box component="dl" sx={{ m: 0 }}>
                 {[
                   ['외우는 구절', stats.memorizedTotal, true],
@@ -112,7 +112,7 @@ function Stats() {
               )}
             </Paper>
           ) : (
-          <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%' }}>
+          <Paper elevation={LAMP_LOOK ? 0 : 3} variant={LAMP_LOOK ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" gutterBottom>전체 구절 현황</Typography>
             <Typography>• 총 등록 구절: <strong>{stats.totalVerses}</strong>개</Typography>
             <Typography>• 즐겨찾기: <strong>{stats.favoriteTotal}</strong>개</Typography>
@@ -120,7 +120,7 @@ function Stats() {
             <Typography>• 오답: <strong>{stats.wrongTotal}</strong>개</Typography>
             <Typography>• 최근구절: <strong>{stats.recentTotal}</strong>개</Typography>
             <Typography>• 미암송: <strong>{stats.unmemorizedTotal}</strong>개</Typography>
-            <Typography sx={{ fontWeight: 'bold', color: IS_LAMP ? 'text.primary' : 'error.main' }}>• 암송구절: <strong>{stats.memorizedTotal}</strong>개</Typography>
+            <Typography sx={{ fontWeight: 'bold', color: LAMP_LOOK ? 'text.primary' : 'error.main' }}>• 암송구절: <strong>{stats.memorizedTotal}</strong>개</Typography>
             <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #eee' }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>신규 암송 현황</Typography>
               <Typography>• 기존 암송 구절: <strong>{stats.existingMemorizedCount}</strong>개</Typography>
@@ -132,15 +132,15 @@ function Stats() {
           )}
         </Grid>
         <Grid item xs={12} md={6}>
-          <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-            <Typography variant="h6" gutterBottom>{IS_LAMP ? '오늘 복습한 구절' : '🗓️ 오늘 총 복습'}</Typography>
-            <Typography variant="h3" color={IS_LAMP ? 'text.primary' : 'secondary'} sx={{ fontWeight: 'bold' }}>{stats.todayStats.total}구절</Typography>
+          <Paper elevation={LAMP_LOOK ? 0 : 3} variant={LAMP_LOOK ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <Typography variant="h6" gutterBottom>{LAMP_LOOK ? '오늘 복습한 구절' : '🗓️ 오늘 총 복습'}</Typography>
+            <Typography variant="h3" color={LAMP_LOOK ? 'text.primary' : 'secondary'} sx={{ fontWeight: 'bold' }}>{stats.todayStats.total}구절</Typography>
           </Paper>
         </Grid>
 
         <Grid item xs={12}>
-          <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>{IS_LAMP ? '오늘 복습 내역' : '✅ 오늘 복습한 구절 현황'}</Typography>
+          <Paper elevation={LAMP_LOOK ? 0 : 3} variant={LAMP_LOOK ? 'outlined' : 'elevation'} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>{LAMP_LOOK ? '오늘 복습 내역' : '✅ 오늘 복습한 구절 현황'}</Typography>
             <Grid container spacing={1}>
               <Grid item xs={6} sm={4}><Typography>{IS_LAMP ? '복습 구절' : '일반/차수별'}: <HighlightedCount value={stats.todayStats.general} />회</Typography></Grid>
               <Grid item xs={6} sm={4}><Typography>{T.newV}: <HighlightedCount value={stats.todayStats.new} />회</Typography></Grid>
@@ -152,9 +152,9 @@ function Stats() {
         </Grid>
 
         <Grid item xs={12}>
-          <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2 }}>
+          <Paper elevation={LAMP_LOOK ? 0 : 3} variant={LAMP_LOOK ? 'outlined' : 'elevation'} sx={{ p: 2 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap">
-              <Typography variant="h6">{IS_LAMP ? '' : '📅 '}일별 복습량 그래프 (총 <Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>{totalForPeriod}</Box>회)</Typography>
+              <Typography variant="h6">{LAMP_LOOK ? '' : '📅 '}일별 복습량 그래프 (총 <Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>{totalForPeriod}</Box>회)</Typography>
               <FormControl size="small" sx={{ minWidth: 120 }}>
                 <InputLabel>기간</InputLabel>
                 <Select value={period} label="기간" onChange={(e) => setPeriod(Number(e.target.value))}>
@@ -170,7 +170,7 @@ function Stats() {
                 <XAxis dataKey="date" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill={IS_LAMP ? "#1C1C1A" : "#82ca9d"} name="복습 횟수"><LabelList dataKey="count" position="top" /></Bar>
+                <Bar dataKey="count" fill={LAMP_LOOK ? "#1C1C1A" : "#82ca9d"} name="복습 횟수"><LabelList dataKey="count" position="top" /></Bar>
               </BarChart>
             </ResponsiveContainer>
           </Paper>

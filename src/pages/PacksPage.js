@@ -15,7 +15,7 @@ import { DataContext } from '../contexts/DataContext';
 import { useSnackbar } from '../contexts/SnackbarContext';
 import { loadDataFromLocal, saveDataToLocal } from '../api/localStorageApi';
 import { VERSES_DATA_KEY, REVIEW_STATUS_KEY, TAGS_DATA_KEY } from '../constants';
-import { PUBLIC_URL } from '../edition';
+import { PUBLIC_URL, LAMP_LOOK } from '../edition';
 
 const normRef = (r) => String(r || '').replace(/\s/g, '');
 
@@ -175,7 +175,7 @@ const PacksPage = () => {
               sx={{ p: 2, borderColor: focused ? 'primary.main' : 'divider', borderWidth: focused ? 2 : 1 }}
             >
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="h6" sx={{ fontFamily: "'Nanum Myeongjo', serif", fontWeight: 700 }}>{p.name}</Typography>
+                <Typography variant="h6" sx={LAMP_LOOK ? { fontFamily: "'Nanum Myeongjo', serif", fontWeight: 700 } : { fontWeight: 'bold' }}>{p.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{p.count}구절{p.groups > 1 ? ` · ${p.groups}묶음` : ''}</Typography>
                 {have > 0 && <Chip size="small" variant={full ? 'filled' : 'outlined'} label={full ? '넣음' : `${have}/${p.count} 넣음`} sx={{ ml: 'auto', ...(full ? { bgcolor: 'text.primary', color: 'background.paper' } : {}) }} />}
               </Box>

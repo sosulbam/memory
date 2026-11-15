@@ -1,5 +1,5 @@
 // src/pages/SettingsPage.js
-import { IS_LAMP, LAMP_VERSION } from '../edition';
+import { IS_LAMP, LAMP_LOOK, LAMP_VERSION } from '../edition';
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider
@@ -167,7 +167,7 @@ const SettingsPage = () => {
       {/* 테마 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <SectionTitle>테마 색상</SectionTitle>
-        <Box sx={{ display: 'flex', flexWrap: IS_LAMP ? 'nowrap' : 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: LAMP_LOOK ? 'nowrap' : 'wrap', gap: 1 }}>
           {Object.keys(THEMES).map(key => (
             <Box
               key={key}
@@ -176,8 +176,8 @@ const SettingsPage = () => {
               aria-label={IS_LAMP ? `테마 ${THEME_LABELS[key] || key}` : undefined}
               aria-pressed={IS_LAMP ? themeKey === key : undefined}
               sx={{
-                flex: IS_LAMP ? '1 1 0' : '1 1 calc(25% - 8px)',
-                minWidth: IS_LAMP ? 0 : 70,
+                flex: LAMP_LOOK ? '1 1 0' : '1 1 calc(25% - 8px)',
+                minWidth: LAMP_LOOK ? 0 : 70,
                 height: 48,
                 borderRadius: 1.5,
                 backgroundImage: THEMES[key],

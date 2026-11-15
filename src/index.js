@@ -5,9 +5,9 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { applySafeArea, loadSafeArea } from './utils/safeArea';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { IS_LAMP } from './edition';
-import { lampTheme } from './lampTheme';
+import { ThemeProvider, CssBaseline, GlobalStyles } from '@mui/material';
+import { IS_LAMP, LAMP_LOOK } from './edition';
+import { lampTheme, lampBaseTheme } from './lampTheme';
 
 // 화면 그리기 전에 사용자가 고른 위/아래 여백을 먼저 적용
 applySafeArea(loadSafeArea());
@@ -21,9 +21,12 @@ console.log("2. React root 생성 완료");
 
 root.render(
   <React.StrictMode>
-    {IS_LAMP ? (
-      // 등불판만 사이트와 같은 톤의 테마(먹색·아이보리·명조 제목·한국어 표기). 기본판은 종전 MUI 기본 그대로
+    {LAMP_LOOK ? (
+      // 등불판 먹색·아이보리 테마(지금은 꺼 둠 — edition.js LAMP_LOOK)
       <ThemeProvider theme={lampTheme}><CssBaseline /><App /></ThemeProvider>
+    ) : IS_LAMP ? (
+      // 등불판: 겉모양은 기존 암송앱 그대로 + 한국어 표기·낱말 단위 줄바꿈
+      <ThemeProvider theme={lampBaseTheme}><GlobalStyles styles={{ body: { wordBreak: 'keep-all', overflowWrap: 'anywhere' } }} /><App /></ThemeProvider>
     ) : (
       <App />
     )}

@@ -10,7 +10,7 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import { THEMES, MODES } from '../constants';
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 
 const InfoItem = ({ icon, primary, secondary, secondaryColor }) => (
     <Grid item xs={4} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1.5, textAlign: 'center' }}>
@@ -47,7 +47,7 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     }
     infoItems.push({ icon: <CheckCircleOutlineIcon />, primary: IS_LAMP ? "남은 구절" : "진행 상태", secondary: IS_LAMP ? `${verses.length}개` : `총 ${verses.length}개 남음` });
 
-    if (IS_LAMP) {
+    if (LAMP_LOOK) {
         return (
             <Box component="dl" sx={{ m: 0, textAlign: 'left', borderTop: '1px solid', borderColor: 'divider' }}>
                 {infoItems.filter(Boolean).map(item => (
@@ -107,7 +107,7 @@ const ReviewDashboard = ({
         return { ...baseStyle, fontFamily: "sans-serif" };
     }, [fontType]);
 
-    if (IS_LAMP) {
+    if (LAMP_LOOK) {
         return (
             <Box sx={{ maxWidth: 'sm', mx: 'auto', width: '100%', pt: 1, pb: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {favoriteVerse && (
@@ -187,8 +187,8 @@ const ReviewDashboard = ({
                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>빠른 모드 선택</Typography>
                         <ToggleButtonGroup value={settings.mode} exclusive onChange={handleModeChange} aria-label="quick mode select" fullWidth size="small">
                             <ToggleButton value="turnBasedReview">차수별 복습</ToggleButton>
-                            <ToggleButton value="turnBasedNew">차수별 뉴구절</ToggleButton>
-                            <ToggleButton value="turnBasedRecent">차수별 최근</ToggleButton>
+                            <ToggleButton value="turnBasedNew">{IS_LAMP ? '새 구절' : '차수별 뉴구절'}</ToggleButton>
+                            <ToggleButton value="turnBasedRecent">{IS_LAMP ? '최근 구절' : '차수별 최근'}</ToggleButton>
                         </ToggleButtonGroup>
                     </Paper>
                 </Box>
@@ -196,7 +196,31 @@ const ReviewDashboard = ({
                     <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '10px' }}>
                         <Box>
                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
-                            <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
+                            {modeIsEmpty ? (
+                                filtered ? (
+                                    // 분류를 걸어 둔 탓이면 그 분류를 보여 준다(R4)
+                                    <Box sx={{ py: 1 }}>
+                                        <Typography color="text.secondary">지금 고른 분류({filterLabel})에는 이 방식으로 볼 구절이 없습니다.</Typography>
+                                        <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => { setters.setSelectedCategories(['전체']); setters.setSelectedSubcategories(['전체']); }}>분류를 전체로</Button>
+                                    </Box>
+                                ) : (
+                                    <Typography color="text.secondary" sx={{ py: 1 }}>{LAMP_EMPTY_HINT[mode]}</Typography>
+                                )
+                            ) : (
+                                <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
+                            )}
+                            {IS_LAMP && mode === 'turnBasedReview' && hasSchedule && schedule && (
+                                <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                    <Typography variant="body2" color="text.secondary">{targetTurn}차 일정 {fmtMD(schedule.startDate)}~{fmtMD(schedule.endDate)}</Typography>
+                                    <Button size="small" onClick={onOpenSchedule}>고치기</Button>
+                                </Box>
+                            )}
+                            {needsSchedule && (
+                                <Box sx={{ mt: 1.5, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', textAlign: 'left' }}>
+                                    <Typography variant="body2" sx={{ flex: '1 1 200px' }}>차수의 시작일과 마감일을 정하면 하루에 볼 분량을 나눠 줍니다.</Typography>
+                                    <Button variant="outlined" size="small" onClick={onOpenSchedule}>일정 정하기</Button>
+                                </Box>
+                            )}
                         </Box>
                         <Button
                             variant="contained"

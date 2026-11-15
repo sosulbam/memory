@@ -26,7 +26,7 @@ import RecitationTestPage from './pages/RecitationTestPage';
 import SettingsPage from './pages/SettingsPage';
 import VerseTreePage from './pages/VerseTreePage';
 import PacksPage from './pages/PacksPage';
-import { IS_LAMP, APP_NAME, PUBLIC_URL } from './edition';
+import { IS_LAMP, LAMP_LOOK, APP_NAME, PUBLIC_URL } from './edition';
 
 import './App.css';
 
@@ -95,7 +95,7 @@ const AppLayout = () => {
     if (type === 'all' || type === 'all_turns_recent' || type === 'all_turns_every') setters.setTargetTurnForRecent(1);
   };
 
-  const title = (IS_LAMP ? LAMP_PAGE_TITLES : pageTitles)[location.pathname] || APP_NAME;
+  const title = (LAMP_LOOK ? LAMP_PAGE_TITLES : pageTitles)[location.pathname] || APP_NAME;
   const isHomePage = location.pathname === '/';
 
   return (
@@ -116,10 +116,10 @@ const AppLayout = () => {
         p: '8px 16px',
         // 폰이 화면을 상태바 밑까지 채워 그릴 때(안드로이드 edge-to-edge) 제목이 가려지지 않게
         pt: 'calc(8px + var(--sat))',
-        borderBottom: IS_LAMP ? '1px solid #E2DFD8' : '1px solid #eee',
+        borderBottom: LAMP_LOOK ? '1px solid #E2DFD8' : '1px solid #eee',
         position: 'sticky',
         top: 0,
-        backgroundColor: IS_LAMP ? 'rgba(248, 246, 241, 0.94)' : 'rgba(255, 255, 255, 0.85)',
+        backgroundColor: LAMP_LOOK ? 'rgba(248, 246, 241, 0.94)' : 'rgba(255, 255, 255, 0.85)',
         backdropFilter: 'blur(10px)',
         zIndex: 1100,
       }}>
@@ -129,7 +129,7 @@ const AppLayout = () => {
         <Typography 
           variant="h5" 
           component="h1" 
-          sx={IS_LAMP ? {
+          sx={LAMP_LOOK ? {
             fontWeight: 700,
             fontSize: '1.3rem',
             position: 'absolute',

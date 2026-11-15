@@ -9,7 +9,8 @@ import { saveDataToLocal } from '../api/localStorageApi';
 import ControlPanel from './ControlPanel';
 
 import HomeIcon from '@mui/icons-material/Home';
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PaletteIcon from '@mui/icons-material/Palette';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -40,7 +41,7 @@ import PaletteOutlined from '@mui/icons-material/PaletteOutlined';
 
 const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus }) => {
   // 등불판은 이동 메뉴를 먼저 보이게 복습 설정을 접어 둔다(「일정 정하기」로 열 때만 펼침)
-  const [openSetup, setOpenSetup] = useState(!IS_LAMP);
+  const [openSetup, setOpenSetup] = useState(!LAMP_LOOK);
   useEffect(() => { if (open && focus?.setup) setOpenSetup(true); }, [open, focus]);
   const [openTheme, setOpenTheme] = useState(false);
   const [openTTS, setOpenTTS] = useState(false);
@@ -134,7 +135,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
     return `남은 ${remainingDays}일간 하루 ${dailyGoal}개 암송 필요`;
   }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, turnScheduleData, originalVerses]);
 
-  const menuItems = IS_LAMP ? [
+  const menuItems = LAMP_LOOK ? [
     { text: '홈', icon: <HomeOutlined />, path: '/' },
     { text: '구절 목록', icon: <FormatListBulletedOutlined />, path: '/list' },
     { text: '구절 구조 보기', icon: <AccountTreeOutlined />, path: '/tree' },
@@ -149,6 +150,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
     { text: '홈', icon: <HomeIcon />, path: '/' },
     { text: '구절 목록', icon: <ViewListIcon />, path: '/list' },
     { text: '구절 구조 보기', icon: <AccountTreeIcon />, path: '/tree' },
+    ...(IS_LAMP ? [{ text: '암송 팩', icon: <LibraryAddIcon />, path: '/packs' }] : []),
     { text: '구절 관리', icon: <ConstructionIcon />, path: '/manage' },
     { text: '태그 관리', icon: <StyleIcon />, path: '/tags' },
     { text: '암송 시험', icon: <AssignmentIcon />, path: '/test' },
@@ -162,7 +164,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
       <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', height: '100%' }} role="presentation">
         <List>
           <ListItem disablePadding><ListItemButton component={RouterLink} to="/" onClick={onClose}><ListItemIcon>{menuItems[0].icon}</ListItemIcon><ListItemText primary={menuItems[0].text} /></ListItemButton></ListItem>
-          {IS_LAMP && (
+          {LAMP_LOOK && (
             <>
           {menuItems.slice(1).map((item) => (<ListItem key={item.text} disablePadding><ListItemButton component={RouterLink} to={item.path} onClick={onClose}><ListItemIcon>{item.icon}</ListItemIcon><ListItemText primary={item.text} /></ListItemButton></ListItem>))}
               <Divider sx={{ my: 1 }} />
@@ -221,13 +223,13 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
           <Collapse in={openTheme} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {Object.keys(THEMES).map(key => (
-                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={IS_LAMP ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
+                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={LAMP_LOOK ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
               ))}
             </Box>
           </Collapse>
             </>
           )}
-          {!IS_LAMP && (
+          {!LAMP_LOOK && (
             <>
           <Divider sx={{ my: 1 }} />
           <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsIcon /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
@@ -285,7 +287,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
           <Collapse in={openTheme} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {Object.keys(THEMES).map(key => (
-                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={IS_LAMP ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
+                <Button key={key} variant={themeKey === key ? 'contained' : 'outlined'} onClick={() => { setThemeKey(key); onClose(); }} size="small" sx={LAMP_LOOK ? { flexGrow: 1, color: 'white', backgroundImage: THEMES[key], outline: themeKey === key ? '2px solid #1C1C1A' : 'none', outlineOffset: 2 } : { flexGrow: 1, color: themeKey === key ? 'white' : 'default', backgroundImage: THEMES[key], textTransform: 'capitalize' }}>{THEME_LABELS[key] || key}</Button>
               ))}
             </Box>
           </Collapse>

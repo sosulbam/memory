@@ -10,7 +10,7 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import HistoryIcon from '@mui/icons-material/History';
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 import { LampFocusHeader, LampFocusBar } from './LampFocus';
 import { formatRefFull } from '../utils/refFormat';
 
@@ -210,7 +210,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
       }}
       onClick={handleClick}
     >
-      {IS_LAMP ? (
+      {LAMP_LOOK ? (
         <LampFocusHeader
           setIsFocusMode={setters.setIsFocusMode} sessionStats={sessionStats} versesCount={versesCount}
           isBrowsingCompleted={isBrowsingCompleted} onToggleBrowseMode={onToggleBrowseMode} remainingToday={remainingToday}
@@ -235,7 +235,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
       />
       )}
       
-      {isBrowsingCompleted && !IS_LAMP && (
+      {isBrowsingCompleted && !LAMP_LOOK && (
         <Box sx={{
             position: 'absolute', top: { xs: '52px', sm: '60px' }, left: { xs: '12px', sm: '16px' },
             display: 'flex', alignItems: 'center', gap: 1, zIndex: 1,

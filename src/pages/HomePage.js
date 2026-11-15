@@ -15,7 +15,7 @@ import TagDialog from '../components/TagDialog';
 import { THEMES } from '../constants';
 import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
 import { Link as RouterLink, useOutletContext } from 'react-router-dom';
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 
 const HomePage = () => {
   const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, setTurnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
@@ -202,7 +202,7 @@ const HomePage = () => {
   if (IS_LAMP && (!originalVerses || originalVerses.length === 0)) {
     return (
       <Container maxWidth="sm" sx={{ p: { xs: 2, sm: 3 }, pt: { xs: 5, sm: 8 }, pb: 'calc(24px + var(--sab))' }}>
-        <Typography sx={{ fontFamily: "'Nanum Myeongjo', serif", fontSize: 24, fontWeight: 700, lineHeight: 1.5 }}>
+        <Typography sx={LAMP_LOOK ? { fontFamily: "'Nanum Myeongjo', serif", fontSize: 24, fontWeight: 700, lineHeight: 1.5 } : { fontSize: 22, fontWeight: 'bold', lineHeight: 1.5 }}>
           외울 구절을 넣어 시작하세요
         </Typography>
         <Typography color="text.secondary" sx={{ mt: 1.5, mb: 4 }}>

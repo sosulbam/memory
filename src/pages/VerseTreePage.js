@@ -4,7 +4,7 @@
 //  - 대카테고리 클릭 → 소카테고리 목록 펼침
 //  - 소카테고리 클릭 → 제목·장절 목록 펼침
 //  - 제목·장절 클릭 → 해당 구절 본문이 카드형태 아코디언으로 열림
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 import React, { useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, Paper, Collapse, Chip, Button, Divider, Stack,
@@ -40,13 +40,13 @@ import { VERSETREE_PREFS_KEY } from '../constants';
 
 // 대카테고리마다 돌아가며 부여하는 은은한 색 팔레트 (좌측 악센트 바 & 칩)
 // 등불판은 먹색 한 가지(사이트 톤) — 시리즈마다 색이 바뀌지 않게
-const PALETTE = IS_LAMP ? ['#1C1C1A'] : [
+const PALETTE = LAMP_LOOK ? ['#1C1C1A'] : [
   '#5C6BC0', '#26A69A', '#EC407A', '#FFA726',
   '#7E57C2', '#42A5F5', '#66BB6A', '#EF5350',
 ];
-const ACCENT = IS_LAMP ? '#1C1C1A' : '#5C6BC0';
-const HOT = IS_LAMP ? '#1C1C1A' : '#EC407A';
-const DONE = IS_LAMP ? '#2E6B47' : '#66BB6A';
+const ACCENT = LAMP_LOOK ? '#1C1C1A' : '#5C6BC0';
+const HOT = LAMP_LOOK ? '#1C1C1A' : '#EC407A';
+const DONE = LAMP_LOOK ? '#2E6B47' : '#66BB6A';
 
 const SUB_FALLBACK = '기타';
 
@@ -584,7 +584,7 @@ const VerseTreePage = () => {
           onClick={handleAdvanceTurn}
           sx={{ mb: 1 }}
         >
-          {IS_LAMP ? '' : '🎉 '}{currentModeLabel} {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
+          {LAMP_LOOK ? '' : '🎉 '}{currentModeLabel} {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
         </Button>
       )}
 

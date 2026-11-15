@@ -1,4 +1,4 @@
-import { IS_LAMP } from '../edition';
+import { IS_LAMP, LAMP_LOOK } from '../edition';
 // src/constants/index.js
 
 /**
@@ -53,8 +53,9 @@ const LAMP_THEMES = {
   twilight: flat('#3A2E29'),  // 밤색
   olive: flat('#55524C'),     // 회색 (완료 구절 보기에도 쓰임)
 };
-export const THEME_LABELS = IS_LAMP
+export const THEME_LABELS = LAMP_LOOK
   ? { deepsea: '먹', midnight: '남색', forest: '숲', twilight: '밤색', olive: '회색' }
+  : IS_LAMP ? { green: '초록', blue: '파랑', deepsea: '바다', twilight: '황혼', moss: '이끼', midnight: '자정', forest: '숲', olive: '올리브' }
   : {};
 
 const DEFAULT_THEMES = {
@@ -67,7 +68,7 @@ const DEFAULT_THEMES = {
   forest: 'linear-gradient(135deg, #0f2027, #2c5364)',   // 숲
   olive: 'linear-gradient(135deg, #8E9EAB, #DAD4CC)',
 };
-export const THEMES = IS_LAMP ? LAMP_THEMES : DEFAULT_THEMES;
+export const THEMES = LAMP_LOOK ? LAMP_THEMES : DEFAULT_THEMES;
 
 // --- [신규] 성경 약어 매핑 (TTS용) ---
 export const BIBLE_BOOKS = {

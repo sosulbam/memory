@@ -2,7 +2,7 @@
 import React from 'react';
 import { Box, Button, Typography } from '@mui/material';
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
-import { IS_LAMP } from '../edition';
+import { LAMP_LOOK } from '../edition';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LockIcon from '@mui/icons-material/Lock';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -34,7 +34,7 @@ const ActionBar = ({ verse, onStatusToggle, onTagDialogOpen, onCopy }) => {
     onCopy();
   };
 
-  if (IS_LAMP) {
+  if (LAMP_LOOK) {
     // 등불판: 이모지 없이 같은 모양 단추, 지금 켜진 상태는 채워서 보여 준다(검토 26번)
     const items = [
       ...(verse.mode !== 'pending' ? [

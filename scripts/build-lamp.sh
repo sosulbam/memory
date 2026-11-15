@@ -13,7 +13,8 @@ cp lamp/packs/*.json build-lamp/packs/
 echo '[]' > build-lamp/data/verses.json
 # apple-touch-icon 은 180px 전용 파일로
 sed -i 's#rel="apple-touch-icon" href="/amsong/logo192.png"#rel="apple-touch-icon" href="/amsong/apple-touch-icon.png"#' build-lamp/index.html
-# 본문 글꼴 Pretendard(자체 호스팅 다이나믹 서브셋) — 등불판만
-sed -i 's#<link rel="manifest"#<link rel="stylesheet" href="/amsong/fonts/pretendard.css" /><link rel="manifest"#' build-lamp/index.html
-grep -q 'fonts/pretendard.css' build-lamp/index.html || { echo "pretendard 링크를 못 넣었습니다"; exit 1; }
+# 본문 글꼴 Pretendard — 등불 겉모양(src/edition.js LAMP_LOOK)일 때만. 2026-11-16 부터 기존 앱 겉모양이라 넣지 않는다
+#  (다시 켤 때: edition.js 의 LAMP_LOOK 을 켜고 아래 두 줄을 되살린다)
+# sed -i 's#<link rel="manifest"#<link rel="stylesheet" href="/amsong/fonts/pretendard.css" /><link rel="manifest"#' build-lamp/index.html
+# grep -q 'fonts/pretendard.css' build-lamp/index.html || { echo "pretendard 링크를 못 넣었습니다"; exit 1; }
 echo "built: $(ls build-lamp/static/js/main.*.js)"

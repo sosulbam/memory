@@ -48,3 +48,6 @@ export const lampTheme = createTheme({
     MuiChip: { styleOverrides: { root: { borderRadius: 4 } } },
   },
 }, koKR);
+
+// 기존 겉모양으로 쓸 때(LAMP_LOOK=false): 색·글꼴은 MUI 기본(기존 암송앱 그대로), 한국어 표기와 한글 줄바꿈만 더한다
+export const lampBaseTheme = createTheme({}, koKR);
