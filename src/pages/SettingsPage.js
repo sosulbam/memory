@@ -69,7 +69,9 @@ const SettingsPage = () => {
     try {
       if ('caches' in window) {
         const keys = await caches.keys();
-        await Promise.all(keys.map(k => caches.delete(k)));
+        // 등불판: 같은 주소의 등불 성경 캐시(받아 둔 주석 등)는 건드리지 않고 암송 것만 비운다
+        const mine = IS_LAMP ? keys.filter(k => k.includes('/amsong/') || k === 'images') : keys;
+        await Promise.all(mine.map(k => caches.delete(k)));
       }
       showSnackbar('캐시를 초기화했습니다. 잠시 후 새로고침됩니다.', 'success');
       setTimeout(() => window.location.reload(), 1200);

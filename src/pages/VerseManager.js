@@ -718,7 +718,12 @@ function VerseManager() {
   const handleResetAllData = async () => {
     if (window.confirm('정말로 모든 데이터를 삭제하시겠습니까? (녹음 파일 포함, 복구 불가)')) {
       setIsSaving(true);
-      localStorage.clear();
+      // 등불판: 같은 주소(apps.sosulbaram.com)에 등불 성경이 함께 있으므로 암송 것(recitation- 로 시작)만 지운다
+      if (IS_LAMP) {
+        Object.keys(localStorage).filter(k => k.startsWith('recitation-')).forEach(k => localStorage.removeItem(k));
+      } else {
+        localStorage.clear();
+      }
       await clearAllRecordings();
       showSnackbar('초기화 완료. 새로고침합니다.', 'success');
       setTimeout(() => window.location.reload(), 1500);
