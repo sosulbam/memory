@@ -1,4 +1,5 @@
 // src/pages/VerseList.js
+import { T, typeLabel } from '../terms';
 import { IS_LAMP } from '../edition';
 import React, { useEffect, useState, useContext, useMemo, useRef, useCallback } from 'react';
 import { Container, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Card, CardContent, ToggleButton, ToggleButtonGroup, Grid, CircularProgress, Collapse, TablePagination, Chip, IconButton, Tooltip, LinearProgress, Button, Dialog, DialogActions, DialogContent, DialogContentText } from '@mui/material';
@@ -70,7 +71,7 @@ function VerseItem({ verse, allVerses, tags, onStatusToggle, onTagDialogOpen, on
         <Box display="flex" justifyContent="center"><AudioControls /></Box>
         <Typography sx={{ my: 1.5, whiteSpace: 'pre-line', flexGrow: 1, fontSize: fs.body }}>{verse.본문}</Typography>
         {(tags && tags.length > 0) && (<Box sx={{ mt: 1.5, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>{tags.map(tag => <Chip key={tag} label={tag} size="small" />)}</Box>)}
-        <Typography color="text.secondary" align="right" sx={{ mt: 'auto', pt: 1 }}>{verse.장절}</Typography>
+        {!IS_LAMP && <Typography color="text.secondary" align="right" sx={{ mt: 'auto', pt: 1 }}>{verse.장절}</Typography>}
       </CardContent>
       <Collapse in={open} timeout="auto" unmountOnExit>
         <Box sx={{ p: 1, borderTop: '1px solid #eee' }} onClick={(e) => e.stopPropagation()}>
@@ -106,7 +107,7 @@ function VerseRow({ verse, allVerses, tags, onStatusToggle, onTagDialogOpen, onC
             {hasRecording && !isRecording && <IconButton size="small" onClick={handleDeleteClick} sx={{ p: 0.5 }}><DeleteIcon fontSize="small" /></IconButton>}
           </Box>
         </TableCell>
-        <TableCell sx={{ fontSize: fs.ref, verticalAlign: 'top', minWidth: 100 }}>{verse.장절}</TableCell>
+        <TableCell sx={{ fontSize: fs.ref, verticalAlign: 'top', minWidth: 100, ...(IS_LAMP ? { whiteSpace: 'nowrap', overflowWrap: 'normal' } : {}) }}>{verse.장절}</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
@@ -126,6 +127,7 @@ function VerseRow({ verse, allVerses, tags, onStatusToggle, onTagDialogOpen, onC
 }
 
 function VerseList() {
+  const [showFilters, setShowFilters] = React.useState(false);
   const { isLoading, originalVerses: allVerses, tagsData, updateVerseStatus, updateTags } = useContext(DataContext);
   const { settings } = useContext(AppSettingsContext);
   const { listFontSize } = settings;
@@ -475,19 +477,20 @@ function VerseList() {
           )}
 
           <ToggleButtonGroup value={viewType} exclusive onChange={(e, newView) => newView && setViewType(newView)} aria-label="보기 방식 선택" size="small">
-            <ToggleButton value="list"><ViewListIcon /></ToggleButton>
-            <ToggleButton value="card"><ViewModuleIcon /></ToggleButton>
+            <ToggleButton value="list" aria-label="목록으로 보기" title="목록으로 보기"><ViewListIcon /></ToggleButton>
+            <ToggleButton value="card" aria-label="카드로 보기" title="카드로 보기"><ViewModuleIcon /></ToggleButton>
           </ToggleButtonGroup>
         </Box>
       </Box>
 
       <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: 3 }}>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}><TextField fullWidth label="전체 검색" variant="outlined" value={filters.searchText} onChange={(e) => handleFilterChange('searchText', e.target.value)} size="small" /></Grid>
-          <Grid item xs={12} sm={6}><TextField fullWidth label="태그 검색" variant="outlined" value={filters.tagSearchText} onChange={(e) => handleFilterChange('tagSearchText', e.target.value)} size="small" /></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>카테고리</InputLabel><Select value={filters.selectedCategory} onChange={(e) => handleFilterChange('selectedCategory', e.target.value)} label="카테고리">{categoryList.map(cat => (<MenuItem key={cat} value={cat}>{cat}</MenuItem>))}</Select></FormControl></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>소카테고리</InputLabel><Select value={filters.selectedSubcategory} onChange={(e) => handleFilterChange('selectedSubcategory', e.target.value)} label="소카테고리">{subcategoryList.map(sub => (<MenuItem key={sub} value={sub}>{sub}</MenuItem>))}</Select></FormControl></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>유형 필터</InputLabel><Select value={filters.typeFilter} onChange={(e) => handleFilterChange('typeFilter', e.target.value)} label="유형 필터">{['전체', '미암송', '뉴구절', '최근구절', '오답구절', '즐겨찾기'].map(f => (<MenuItem key={f} value={f}>{f}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={6}><Box sx={{ display: 'flex', gap: 1 }}><TextField fullWidth label="전체 검색" variant="outlined" value={filters.searchText} onChange={(e) => handleFilterChange('searchText', e.target.value)} size="small" />
+            {IS_LAMP && <Button variant="outlined" size="small" onClick={() => setShowFilters(v => !v)} aria-expanded={showFilters} sx={{ display: { xs: 'inline-flex', sm: 'none' }, flexShrink: 0, whiteSpace: 'nowrap' }}>{showFilters ? '접기' : '거르기'}</Button>}</Box></Grid>
+          <Grid item xs={12} sm={6} sx={{ display: IS_LAMP && !showFilters ? { xs: 'none', sm: 'block' } : undefined }}><TextField fullWidth label="태그 검색" variant="outlined" value={filters.tagSearchText} onChange={(e) => handleFilterChange('tagSearchText', e.target.value)} size="small" /></Grid>
+          <Grid item xs={12} sm={4} sx={{ display: IS_LAMP && !showFilters ? { xs: 'none', sm: 'block' } : undefined }}><FormControl fullWidth size="small"><InputLabel>{T.cat}</InputLabel><Select value={filters.selectedCategory} onChange={(e) => handleFilterChange('selectedCategory', e.target.value)} label={T.cat}>{categoryList.map(cat => (<MenuItem key={cat} value={cat}>{cat}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={4} sx={{ display: IS_LAMP && !showFilters ? { xs: 'none', sm: 'block' } : undefined }}><FormControl fullWidth size="small"><InputLabel>{T.sub}</InputLabel><Select value={filters.selectedSubcategory} onChange={(e) => handleFilterChange('selectedSubcategory', e.target.value)} label={T.sub}>{subcategoryList.map(sub => (<MenuItem key={sub} value={sub}>{sub}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={4} sx={{ display: IS_LAMP && !showFilters ? { xs: 'none', sm: 'block' } : undefined }}><FormControl fullWidth size="small"><InputLabel>유형 필터</InputLabel><Select value={filters.typeFilter} onChange={(e) => handleFilterChange('typeFilter', e.target.value)} label="유형 필터">{['전체', '미암송', '뉴구절', '최근구절', '오답구절', '즐겨찾기'].map(f => (<MenuItem key={f} value={f}>{typeLabel(f)}</MenuItem>))}</Select></FormControl></Grid>
         </Grid>
       </Paper>
 

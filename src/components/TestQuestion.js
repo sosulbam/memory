@@ -1,4 +1,5 @@
 // src/components/TestQuestion.js
+import { formatRefFull } from '../utils/refFormat';
 import React from 'react';
 import { Box, TextField, Typography, Paper, Button, Chip } from '@mui/material';
 import { diffChars } from 'diff';
@@ -40,7 +41,7 @@ const TestQuestion = ({ verse, userAnswer, isGraded, onAnswerChange, onMarkAsInc
     <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-          {questionNumber}. {verse.장절}
+          {questionNumber}. {IS_LAMP ? formatRefFull(verse.장절) : verse.장절}
         </Typography>
         {isGraded && (isTitleCorrect && isBodyCorrect ? 
           <Chip icon={<CheckCircleOutlineIcon />} label="정답" color="success" size="small" /> :
@@ -71,7 +72,7 @@ const TestQuestion = ({ verse, userAnswer, isGraded, onAnswerChange, onMarkAsInc
       
       {isGraded && !(isTitleCorrect && isBodyCorrect) && (
         <Box mt={2}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>[채점 결과]</Typography>
+          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>{IS_LAMP ? '채점 결과' : '[채점 결과]'}</Typography>
           {!isTitleCorrect && 
             <>
               <Typography variant="caption">제목:</Typography>
@@ -92,7 +93,7 @@ const TestQuestion = ({ verse, userAnswer, isGraded, onAnswerChange, onMarkAsInc
             startIcon={<ReportProblemOutlinedIcon />}
             onClick={() => onMarkAsIncorrect(verse.id)}
           >
-            이 구절 '오답'으로 등록하기
+            {IS_LAMP ? '오답으로 표시' : "이 구절 '오답'으로 등록하기"}
           </Button>
         </Box>
       )}

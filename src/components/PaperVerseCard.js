@@ -1,7 +1,8 @@
 // src/components/PaperVerseCard.js
 // 집중모드 「종이 카드」 보기 — 네비게이토 암송 카드처럼 흰 카드가 묶음으로 겹쳐 있는 모습.
 // 사용자 결정(2026-11-07): 애니메이션 없음 · 앞면은 장절만 · 뒷면은 제목·본문·카테고리·장절 전부 · 나눔명조
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { IS_LAMP } from '../edition';
 import { Box, Typography } from '@mui/material';
 import { formatRefFull } from '../utils/refFormat';
 
@@ -63,13 +64,26 @@ export const PaperFront = ({ verse, fontSize }) => (
 // 뒷면: 제목 · 본문 · (아래) 카테고리 · 장절
 export const PaperBack = ({ verse, fontSize }) => {
   const sub = verse.소카테고리 && verse.소카테고리 !== verse.카테고리 ? `${verse.카테고리} · ${verse.소카테고리}` : verse.카테고리;
+  // 등불판: 본문이 카드 안에서 넘치면 「아래로 밀어 더 보기」를 보여 준다(가로 화면 긴 구절, N2)
+  const bodyRef = useRef(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (!IS_LAMP) return undefined;
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    const check = () => setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => { el.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
+  }, [verse, fontSize]);
   return (
     <Deck>
       <Box className="paper-face" sx={{ ...faceSx, minHeight: { xs: 190, sm: 230 } }}>
         <Typography component="div" sx={{ fontFamily: CARD_FONT, fontWeight: 800, pr: verse.오답여부 ? 5 : 0, fontSize: TITLE_SIZE[fontSize] || TITLE_SIZE.medium }}>
           {verse.제목}
         </Typography>
-        <Typography component="div" data-card-scroll sx={{
+        <Typography component="div" data-card-scroll ref={bodyRef} sx={{
           fontFamily: CARD_FONT, fontWeight: 400, color: INK, lineHeight: 1.75, textIndent: '1em',
           whiteSpace: 'pre-line', wordBreak: 'keep-all', flex: 1,
           // 긴 구절은 카드 안에서 스크롤 — 카드 아래 음성 버튼 줄이 「상태 변경」과 겹치지 않는 높이
@@ -78,6 +92,9 @@ export const PaperBack = ({ verse, fontSize }) => {
         }}>
           {verse.본문}
         </Typography>
+        {IS_LAMP && more && (
+          <Box sx={{ mt: -0.5, textAlign: 'center', fontSize: 12, color: SUB, fontFamily: 'inherit' }}>아래로 밀어 더 보기 ▾</Box>
+        )}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 1.5, color: SUB, fontSize: { xs: 12, sm: 13 }, fontFamily: CARD_FONT }}>
           <span>{sub}</span>
           <Box component="span" sx={{ fontWeight: 800, color: INK, whiteSpace: 'nowrap' }}>{formatRefFull(verse.장절)}</Box>

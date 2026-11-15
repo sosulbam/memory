@@ -1,4 +1,6 @@
 // src/pages/RecitationTestPage.js
+import { IS_LAMP } from '../edition';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { Container, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { DataContext } from '../contexts/DataContext';
@@ -8,6 +10,7 @@ import TestSheet from '../components/TestSheet';
 const TEST_STORAGE_KEY = 'recitation-test-progress';
 
 const RecitationTestPage = () => {
+  const { showSnackbar } = useSnackbar();
   const { originalVerses, updateVerseStatus } = useContext(DataContext);
   const [phase, setPhase] = useState('setup'); // 'setup', 'testing', 'graded'
   const [testQuestions, setTestQuestions] = useState([]);
@@ -80,7 +83,7 @@ const RecitationTestPage = () => {
   
   const handleMarkAsIncorrect = (verseId) => {
     updateVerseStatus(verseId, { '오답여부': true });
-    alert('오답으로 등록되었습니다.');
+    if (IS_LAMP) showSnackbar('오답으로 표시했습니다.', 'success'); else alert('오답으로 등록되었습니다.');
   };
 
   const handleStartNewTest = () => {

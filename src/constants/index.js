@@ -6,7 +6,17 @@ import { IS_LAMP } from '../edition';
  * API 키, 기본 URL, 모드 목록 등을 중앙에서 관리하여 일관성을 유지합니다.
  */
 
-export const MODES = [
+export const MODES = IS_LAMP ? [
+  { label: '분류별 복습', value: 'category' },
+  { label: '새 구절', value: 'new' },
+  { label: '오답 구절', value: 'wrong' },
+  { label: '즐겨찾기', value: 'favorite' },
+  { label: '최근 구절', value: 'recent' },
+  { label: '차수별 복습', value: 'turnBasedReview' },
+  { label: '새 구절', value: 'turnBasedNew' },
+  { label: '최근 구절', value: 'turnBasedRecent' },
+  { label: '미암송 관리', value: 'pending' },
+] : [
   { label: '카테고리별 복습', value: 'category' },
   { label: '뉴구절복습', value: 'new' },
   { label: '오답구절복습', value: 'wrong' },

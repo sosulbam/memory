@@ -18,7 +18,7 @@ const LampHelpDialog = ({ open, onClose }) => (
                 <ListItem><ListItemText primary="외웠어요" secondary="이 구절을 이번 복습에서 완료로 기록하고 다음 구절로 넘어갑니다. 카드를 왼쪽으로 밀어도 같습니다." /></ListItem>
                 <ListItem><ListItemText primary="다시" secondary="완료로 기록하지 않고 이 구절을 맨 뒤로 보냅니다. 나중에 다시 나옵니다." /></ListItem>
                 <ListItem><ListItemText primary="오른쪽으로 밀기" secondary="방금 완료한 구절을 다시 봅니다(기록은 바뀌지 않습니다)." /></ListItem>
-                <ListItem><ListItemText primary="상태" secondary="새 구절·오답·즐겨찾기·태그·복사. 카드를 위로 밀어도 열립니다." /></ListItem>
+                <ListItem><ListItemText primary="상태" secondary="새 구절·오답·최근·즐겨찾기·미암송을 켜고 끄고, 태그를 붙이고, 구절을 복사합니다. 채운 단추가 켜진 상태입니다. 카드를 위로 밀어도 열립니다." /></ListItem>
                 <ListItem><ListItemText primary="연속 재생" secondary="구절을 차례로 읽어 줍니다. 듣기만 하므로 완료로 기록하지 않습니다." /></ListItem>
                 <ListItem><ListItemText primary="완료 보기" secondary="이번 차수에서 이미 완료한 구절을 넘겨 봅니다." /></ListItem>
                 <ListItem><ListItemText primary="PC 단축키" secondary="Space 뒤집기 · Enter 외웠어요 · ← 방금 완료한 구절 · → 돌아오기" /></ListItem>
@@ -87,6 +87,9 @@ const ReviewSession = ({
     const { toggleAnswer, handleMarkAsReviewed, browseNext, browsePrev, toggleBrowseMode, peekPrev, peekNext, exitPeek } = actions;
     const [isActionBarVisible, setIsActionBarVisible] = useState(false);
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+    // 등불판: 복습 화면을 열 때는 늘 앞면부터(답이 먼저 보이지 않게, R6)
+    useEffect(() => { if (IS_LAMP && showAnswer) toggleAnswer(); // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Wake Lock (화면 꺼짐 방지)
     const wakeLockRef = useRef(null);
@@ -184,6 +187,8 @@ const ReviewSession = ({
     // --- [수정됨] 키보드 단축키 핸들러 ---
     useEffect(() => {
         const handleKeyDown = (e) => {
+            // 등불판: 상태 시트는 Esc 로 닫힌다(N7)
+            if (IS_LAMP && e.key === 'Escape' && isActionBarVisible) { setIsActionBarVisible(false); return; }
             // 팝업이나 입력창이 열려있으면 단축키 무시
             if (isActionBarVisible || tagDialogOpen || helpOpen) return;
 
@@ -229,7 +234,8 @@ const ReviewSession = ({
         verse, themeKey: activeThemeKey, isFocusMode: true, settings, setters, sessionStats,
         versesCount: verses.length, isBrowsingCompleted, onToggleBrowseMode: toggleBrowseMode,
         onFooterClick: () => setIsActionBarVisible(true), currentIndex, remainingToday,
-        onHelpClick, actions, dailyProgress,
+        // 등불판: 상태 시트가 열린 채 도움말을 누르면 시트를 먼저 닫는다(도움말이 시트 밑에 깔리지 않게, N7)
+        onHelpClick: IS_LAMP ? () => { setIsActionBarVisible(false); onHelpClick(); } : onHelpClick, actions, dailyProgress,
         onAutoPlay: handleAutoPlay, isAutoPlaying: isAutoPlaying, isPeeking
     };
 
@@ -245,7 +251,7 @@ const ReviewSession = ({
             {verse && (
                 <Slide direction="up" in={isActionBarVisible} mountOnEnter unmountOnExit>
                     <Paper elevation={4} sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1400, borderTopLeftRadius: 16, borderTopRightRadius: 16, pb: 'calc(16px + var(--sab))' }}>
-                        <Typography variant="caption" align="center" display="block" sx={{ pt: 1, color: 'text.secondary' }}>바깥 영역을 터치하여 닫기</Typography>
+                        <Typography variant="caption" align="center" display="block" sx={{ pt: 1, color: 'text.secondary' }}>{IS_LAMP ? '바깥을 누르면 닫힙니다' : '바깥 영역을 터치하여 닫기'}</Typography>
                         <ActionBar verse={verse} onStatusToggle={onStatusToggle} onTagDialogOpen={onTagDialogOpen} onCopy={handleCopyVerse} />
                     </Paper>
                 </Slide>

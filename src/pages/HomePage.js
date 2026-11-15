@@ -4,7 +4,9 @@ import { DataContext } from '../contexts/DataContext';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useReviewSession } from '../hooks/useReviewSession';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { Box, Typography, Container, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import { Box, Typography, Container, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
+import { saveDataToLocal, loadDataFromLocal } from '../api/localStorageApi';
+import { TURN_SCHEDULE_KEY, REVIEW_LOG_KEY } from '../constants';
 import { getKSTDateString } from '../utils/dateUtils';
 
 import ReviewDashboard from '../components/ReviewDashboard';
@@ -16,7 +18,7 @@ import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import { IS_LAMP } from '../edition';
 
 const HomePage = () => {
-  const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
+  const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, setTurnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
   const { isLoaded: settingsLoaded, settings, setters } = useAppSettings();
   const { showSnackbar } = useSnackbar();
 
@@ -63,13 +65,17 @@ const HomePage = () => {
     if (totalDays <= 0) { setTodaysGoal(0); return; }
 
     const recommendedPerDay = totalInScope / totalDays;
-    const targetByToday = Math.floor(elapsedDays * recommendedPerDay);
+    // 등불판은 올림(하루 0.53구절 → 1구절) — 서랍의 「하루 N개」와 같은 값(R1)
+    const targetByToday = IS_LAMP ? Math.ceil(elapsedDays * recommendedPerDay) : Math.floor(elapsedDays * recommendedPerDay);
     const goal = targetByToday - totalReviewedCount;
 
     setTodaysGoal(goal > 0 ? goal : 0);
   }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, originalVerses, turnScheduleData, reviewLogData]);
 
-  const dailyProgress = { todaysGoal, completedToday };
+  // 등불판 머리줄 「오늘 N」= 오늘 전체 복습 수(통계와 같은 값). 복습을 시작할 때 기록에서 읽어 둔다(N5)
+  const [todayBase, setTodayBase] = useState(0);
+  const readTodayTotal = () => { const log = loadDataFromLocal(REVIEW_LOG_KEY) || {}; const d = log[getKSTDateString()]; return (d && typeof d === 'object' ? d.total : d) || 0; };
+  const dailyProgress = { todaysGoal, completedToday, todayBase };
   const handleReviewLogUpdate = () => { loadData(); };
 
   const { verse, verses, index, showAnswer, sessionStats, actions, isBrowsingCompleted, isPeeking, isTurnCompleted, resetTurnCompletion } = useReviewSession(originalVerses, settings, updateVerseStatus, showSnackbar, dailyProgress, handleReviewLogUpdate);
@@ -81,6 +87,22 @@ const HomePage = () => {
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
   const outlet = useOutletContext() || {};
+  // 등불판 「일정 정하기」: 날짜 두 칸과 저장만 있는 작은 창(N4)
+  const [scheduleDraft, setScheduleDraft] = useState(null);
+  const openSchedule = () => {
+    const cur = (turnScheduleData && turnScheduleData[targetTurn]) || {};
+    // 기기 날짜 기준(해외에서 쓰는 사람도 「오늘」이 맞게 — 차수 계산도 기기 날짜로 한다)
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    setScheduleDraft({ startDate: cur.startDate || today, endDate: cur.endDate || '' });
+  };
+  const saveSchedule = () => {
+    const next = { ...(turnScheduleData || {}), [targetTurn]: { startDate: scheduleDraft.startDate, endDate: scheduleDraft.endDate } };
+    setTurnScheduleData(next);
+    saveDataToLocal(TURN_SCHEDULE_KEY, next);
+    setScheduleDraft(null);
+    showSnackbar(`${targetTurn}차 일정을 저장했습니다.`, 'success');
+  };
 
   // 등불판: 지금 모드에 들어 있는 구절 수(완료 여부와 무관). 0이면 「완주」 대신 「이 모드에 구절이 없습니다」(검토 3번)
   const modePoolCount = useMemo(() => {
@@ -205,21 +227,41 @@ const HomePage = () => {
           onTagDialogOpen={() => setTagDialogOpen(true)} currentIndex={index} remainingToday={remainingToday}
           onHelpClick={() => setHelpOpen(true)} tagDialogOpen={tagDialogOpen} helpOpen={helpOpen}
           setHelpOpen={setHelpOpen} setTagDialogOpen={setTagDialogOpen} showSnackbar={showSnackbar}
-          dailyProgress={{ todaysGoal, completedToday }} tagsData={tagsData} updateTags={updateTags}
+          dailyProgress={dailyProgress} tagsData={tagsData} updateTags={updateTags}
         />
       ) : (
         <Container maxWidth="lg" sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 'calc(16px + var(--sab))', sm: 'calc(24px + var(--sab))' } }}>
           <ReviewDashboard
             settings={settings} setters={setters} verses={verses} remainingToday={remainingToday}
             favoriteVerse={favoriteVerse} themeKey={themeKey}
-            onStartReview={() => { setSessionTodaysGoal(todaysGoal); setIsFocusMode(true); }}
+            onStartReview={() => { setSessionTodaysGoal(todaysGoal); if (IS_LAMP) setTodayBase(readTodayTotal() - sessionStats.sessionCompletedCount); /* 같은 방식으로 다시 열면 이전 회차 수가 이어지므로 빼 둔다 */ setIsFocusMode(true); }}
             onAdvanceTurn={handleAdvanceTurn}
             modePoolCount={modePoolCount}
             hasSchedule={hasSchedule}
-            onOpenSchedule={() => outlet.setDrawerOpen && outlet.setDrawerOpen(true, { setup: true })}
+            schedule={turnScheduleData && turnScheduleData[targetTurn]}
+            onOpenSchedule={openSchedule}
           />
           <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Container>
+      )}
+
+      {IS_LAMP && (
+        <Dialog open={!!scheduleDraft} onClose={() => setScheduleDraft(null)} fullWidth maxWidth="xs">
+          <DialogTitle>{targetTurn}차 일정</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>시작일부터 마감일까지 남은 구절을 날마다 나눠 보여 줍니다.</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField type="date" label="시작일" value={scheduleDraft?.startDate || ''} onChange={(e) => setScheduleDraft(d => ({ ...d, startDate: e.target.value }))} InputLabelProps={{ shrink: true }} fullWidth />
+              <TextField type="date" label="마감일" value={scheduleDraft?.endDate || ''} onChange={(e) => setScheduleDraft(d => ({ ...d, endDate: e.target.value }))} InputLabelProps={{ shrink: true }} fullWidth
+                error={!!(scheduleDraft?.endDate && scheduleDraft?.startDate && scheduleDraft.endDate < scheduleDraft.startDate)}
+                helperText={scheduleDraft?.endDate && scheduleDraft?.startDate && scheduleDraft.endDate < scheduleDraft.startDate ? '마감일이 시작일보다 앞입니다.' : ' '} />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setScheduleDraft(null)}>닫기</Button>
+            <Button variant="contained" onClick={saveSchedule} disabled={!scheduleDraft?.startDate || !scheduleDraft?.endDate || scheduleDraft.endDate < scheduleDraft.startDate}>저장</Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       <Dialog open={resetConfirm.open} onClose={handleCancelReset}>

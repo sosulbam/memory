@@ -49,21 +49,24 @@
    "name": "찬양 60구절",
    "description": "찬양하는 이유와 방법, 하나님 A–Z",
    "count": 62,
-   "groups": 3
+   "groups": 3,
+   "note": "시리즈 이름은 60구절이지만 묶음에 든 대로 62구절을 모두 넣습니다."
   },
   {
    "id": "leadership60",
    "name": "리더십 60구절",
    "description": "부르심 · 역할 · 인격 · 기술 · 자라갈 영역",
    "count": 66,
-   "groups": 5
+   "groups": 5,
+   "note": "시리즈 이름은 60구절이지만 묶음에 든 대로 66구절을 모두 넣습니다."
   },
   {
    "id": "evangelism60",
    "name": "전도 60구절",
    "description": "전도의 중요성과 방법 · 인간의 상태 · 복음의 핵심 · 반대 질문",
    "count": 66,
-   "groups": 5
+   "groups": 5,
+   "note": "시리즈 이름은 60구절이지만 묶음에 든 대로 66구절을 모두 넣습니다."
   },
   {
    "id": "training60",

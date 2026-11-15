@@ -1,4 +1,5 @@
 // src/pages/SettingsPage.js
+import { IS_LAMP, LAMP_VERSION } from '../edition';
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider
@@ -42,6 +43,7 @@ const REVIEW_SIZE_MAP  = { small: '0.9rem',  medium: '1.1rem',  large: '1.35rem'
 const LIST_SIZE_MAP    = { small: '0.85rem', medium: '1rem',    large: '1.2rem'  };
 
 const SettingsPage = () => {
+  const [showDiag, setShowDiag] = React.useState(false);
   const { settings, setters } = useAppSettings();
   const { fontSize, listFontSize, fontType, themeKey } = settings;
   const { setFontSize, setListFontSize, setFontType, setThemeKey } = setters;
@@ -91,7 +93,7 @@ const SettingsPage = () => {
 
       {/* 복습 카드 폰트 크기 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-        <SectionTitle>복습 카드 폰트 크기</SectionTitle>
+        <SectionTitle>{IS_LAMP ? '복습 카드 글자 크기' : '복습 카드 폰트 크기'}</SectionTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1 }}>
           <TextDecreaseIcon fontSize="small" color="action" />
           <Slider
@@ -100,6 +102,8 @@ const SettingsPage = () => {
             marks={FONT_SIZE_MARKS}
             onChange={(e, v) => setFontSize(FONT_SIZE_VALUES[v])}
             sx={{ flex: 1 }}
+            aria-label={IS_LAMP ? '글자 크기' : undefined}
+            getAriaValueText={IS_LAMP ? ((v) => ['작게', '보통', '크게'][v] || String(v)) : undefined}
           />
           <TextIncreaseIcon fontSize="small" color="action" />
         </Box>
@@ -116,7 +120,7 @@ const SettingsPage = () => {
 
       {/* 목록/관리 폰트 크기 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-        <SectionTitle>구절 목록 · 관리 폰트 크기</SectionTitle>
+        <SectionTitle>{IS_LAMP ? '목록·관리 화면 글자 크기' : '구절 목록 · 관리 폰트 크기'}</SectionTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 1 }}>
           <TextDecreaseIcon fontSize="small" color="action" />
           <Slider
@@ -125,6 +129,8 @@ const SettingsPage = () => {
             marks={FONT_SIZE_MARKS}
             onChange={(e, v) => setListFontSize(FONT_SIZE_VALUES[v])}
             sx={{ flex: 1 }}
+            aria-label={IS_LAMP ? '글자 크기' : undefined}
+            getAriaValueText={IS_LAMP ? ((v) => ['작게', '보통', '크게'][v] || String(v)) : undefined}
           />
           <TextIncreaseIcon fontSize="small" color="action" />
         </Box>
@@ -141,7 +147,7 @@ const SettingsPage = () => {
 
       {/* 폰트 종류 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
-        <SectionTitle>폰트 종류</SectionTitle>
+        <SectionTitle>{IS_LAMP ? '글꼴' : '폰트 종류'}</SectionTitle>
         <ToggleButtonGroup
           color="primary"
           value={fontType}
@@ -159,14 +165,17 @@ const SettingsPage = () => {
       {/* 테마 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <SectionTitle>테마 색상</SectionTitle>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexWrap: IS_LAMP ? 'nowrap' : 'wrap', gap: 1 }}>
           {Object.keys(THEMES).map(key => (
             <Box
               key={key}
               onClick={() => setThemeKey(key)}
+              role={IS_LAMP ? 'button' : undefined}
+              aria-label={IS_LAMP ? `테마 ${THEME_LABELS[key] || key}` : undefined}
+              aria-pressed={IS_LAMP ? themeKey === key : undefined}
               sx={{
-                flex: '1 1 calc(25% - 8px)',
-                minWidth: 70,
+                flex: IS_LAMP ? '1 1 0' : '1 1 calc(25% - 8px)',
+                minWidth: IS_LAMP ? 0 : 70,
                 height: 48,
                 borderRadius: 1.5,
                 backgroundImage: THEMES[key],
@@ -210,8 +219,8 @@ const SettingsPage = () => {
       <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
         <SectionTitle>앱 업데이트</SectionTitle>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          새 버전이 적용되지 않을 때 캐시를 초기화하면 최신 버전으로 업데이트돼요.
-          <br />⚠️ 구절 데이터는 삭제되지 않아요.
+          {IS_LAMP ? <>새 버전이 적용되지 않을 때 누르면 캐시를 비우고 최신 버전을 받습니다. 구절과 복습 기록은 지워지지 않습니다.</> : <>새 버전이 적용되지 않을 때 캐시를 초기화하면 최신 버전으로 업데이트돼요.
+          <br />⚠️ 구절 데이터는 삭제되지 않아요.</>}
         </Typography>
         <Button
           variant="outlined"
@@ -223,8 +232,25 @@ const SettingsPage = () => {
         </Button>
       </Paper>
 
+      {/* 등불판: 버전 한 줄만, 기기 정보는 눌러서 펼친다(N11) */}
+      {IS_LAMP && (
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary" component="div">등불 암송 {LAMP_VERSION}</Typography>
+          {diag && (
+            <Button size="small" variant="text" onClick={() => setShowDiag(v => !v)} sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+              {showDiag ? '기기 정보 접기' : '기기 정보 보기'}
+            </Button>
+          )}
+          {diag && showDiag && (
+            <Typography variant="caption" color="text.secondary" component="div" data-testid="diag-line" sx={{ lineHeight: 1.6, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
+              폰 여백 위 {diag.envTop}/아래 {diag.envBottom} · 적용 위 {diag.useTop}/아래 {diag.useBottom}
+              <br />화면 {diag.size} (기기 {diag.screen}, ×{diag.dpr}) · {diag.standalone ? '설치앱' : '브라우저'} · {diag.browser} · {diag.os}
+            </Typography>
+          )}
+        </Box>
+      )}
       {/* 진단 정보 — 문제 문의 시 이 줄을 캡처해 보내 주세요 */}
-      {diag && (
+      {!IS_LAMP && diag && (
         <Typography variant="caption" color="text.disabled" component="div" data-testid="diag-line"
           sx={{ mt: 2, textAlign: 'center', lineHeight: 1.6, wordBreak: 'break-all' }}>
           빌드 {BUILD_ID} · 폰 여백 위 {diag.envTop}/아래 {diag.envBottom} · 적용 위 {diag.useTop}/아래 {diag.useBottom}

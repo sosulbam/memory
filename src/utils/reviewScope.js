@@ -4,6 +4,7 @@
 // 홈(useReviewSession)과 트리 구조 보기(VerseTreePage)가 동일한 규칙을 공유하게 한다.
 // ⚠️ 공개판: 구절의 복습날짜는 홈(useReviewSession)과 동일하게 "YYYY. M. D"(로컬) 형식.
 //    getKSTDateString(YYYY-MM-DD)는 REVIEW_LOG 키에만 쓰이므로 여기선 사용하지 않는다.
+import { T } from '../terms';
 
 // 홈 useReviewSession의 복습날짜/오늘 비교와 100% 동일한 문자열 (로컬 기준, 무패딩 점 형식)
 export const getReviewDateStr = () => {
@@ -17,9 +18,9 @@ const categoryFilter = (v, selectedCategories = ['전체'], selectedSubcategorie
 
 // 트리 복습 모드에서 노출하는 3개 차수별 모드
 export const TURN_BASED_MODES = [
-  { value: 'turnBasedReview', label: '복습구절' },
-  { value: 'turnBasedNew', label: '뉴구절' },
-  { value: 'turnBasedRecent', label: '최근구절' },
+  { value: 'turnBasedReview', label: T.review },
+  { value: 'turnBasedNew', label: T.newV },
+  { value: 'turnBasedRecent', label: T.recent },
 ];
 
 // 주어진 모드/설정으로 복습 대상을 { base, remaining, completed } 로 분리

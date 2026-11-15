@@ -119,6 +119,15 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
     const pendingFileRef = useRef(null);
 
     const currentTheme = THEMES[themeKey];
+    // 등불판 차수 줄(N6): 완료 보기에선 몇 차까지 마쳤는지, 복습 중엔 지금 보는 차수만
+    const lampTurnText = (v) => {
+        if (!v) return '';
+        const done = mode === 'turnBasedNew' ? v.maxCompletedTurnForNew : mode === 'turnBasedRecent' ? v.maxCompletedTurnForRecent : v.maxCompletedTurn;
+        const target = mode === 'turnBasedNew' ? targetTurnForNew : mode === 'turnBasedRecent' ? targetTurnForRecent : targetTurn;
+        const label = mode === 'turnBasedNew' ? '새 구절 ' : mode === 'turnBasedRecent' ? '최근 구절 ' : '';
+        if (isBrowsingCompleted || isPeeking) return done ? `${label}${done}차까지 마침` : '';
+        return `${label}${target}차 복습 중`;
+    };
     const daysAgoText = calculateDaysAgoText(verse?.복습날짜);
     const startDateText = calculateStartDateText(verse?.암송시작일);
 
@@ -404,7 +413,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
     const bodySizeMap = { small: { xs: '1.2rem', sm: '1.3rem' }, medium: { xs: '1.3rem', sm: '1.5rem' }, large: { xs: '1.5rem', sm: '1.7rem' } };
 
     const TTSControls = () => (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
+        <Box className="lamp-tts" sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
             <Tooltip title={isPlaying ? "멈춤" : "듣기(녹음/TTS)"}>
                 <IconButton onClick={handleSinglePlay} size="medium" sx={{ color: isPlaying ? '#ffeb3b' : (hasRecordedFile ? '#4fc3f7' : 'rgba(255,255,255,0.8)'), bgcolor: 'rgba(0,0,0,0.2)', '&:hover': { bgcolor: 'rgba(0,0,0,0.3)', color: 'white' } }}>
                     {isPlaying && !isAutoPlaying ? <StopIcon /> : <VolumeUpIcon />}
@@ -436,9 +445,11 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
             {verse && <TTSControls />}
             {verse && mode.startsWith('turnBased') && (
                 <Typography variant="subtitle1" sx={{ fontSize: '1.1rem', mt: 2, userSelect: 'none' }}>
+                    {IS_LAMP ? lampTurnText(verse) : (<>
                     {mode === 'turnBasedReview' && `(${verse.currentReviewTurn || 1}차 / 목표 ${targetTurn}차)`}
                     {mode === 'turnBasedNew' && `(${IS_LAMP ? '새 구절' : '뉴'} ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForNew}차)`}
                     {mode === 'turnBasedRecent' && `(최근 ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForRecent}차)`}
+                    </>)}
                 </Typography>
             )}
         </Box>
@@ -448,15 +459,21 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
     const PaperContent = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5, width: '100%', px: 2, pt: 'calc(100px + var(--sat))', pb: 'calc(80px + var(--sab))', boxSizing: 'border-box', minHeight: '100%', justifyContent: 'center',
             ...(IS_LAMP ? { pt: 'calc(108px + var(--sat))', pb: 'calc(96px + var(--sab))',
+                // 세로 화면 긴 구절: 카드 본문을 남는 높이까지(R7)
+                '& [data-card-scroll]': { maxHeight: 'max(38vh, calc(100vh - 420px))' },
                 // 가로·낮은 화면: 머리줄 바로 아래부터, 본문은 카드 안에서 스크롤(카드가 머리줄 밑으로 들어가지 않게)
-                '@media (max-height:500px)': { justifyContent: 'flex-start', pt: 'calc(60px + var(--sat))', pb: 'calc(66px + var(--sab))', gap: 1, '& .lamp-turn': { display: 'none' }, '& [data-card-scroll]': { maxHeight: '22vh' }, '& .paper-face': { minHeight: 'auto', py: 1.5 } } } : {}) }}>
+                '@media (max-height:500px)': { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', pt: 'calc(56px + var(--sat))', pb: 'calc(64px + var(--sab))', gap: 2,
+                  '& .lamp-turn': { display: 'none' }, '& .lamp-tts': { flexDirection: 'column', mt: 0, gap: 1 },
+                  '& [data-card-scroll]': { maxHeight: 'calc(100vh - 230px)' }, '& .paper-face': { minHeight: 'auto', py: 1.5 } } } : {}) }}>
             {showAnswer ? <PaperBack verse={verse} fontSize={fontSize} /> : <PaperFront verse={verse} fontSize={fontSize} />}
             <TTSControls />
             {!showAnswer && mode.startsWith('turnBased') && (
                 <Typography className="lamp-turn" variant="subtitle1" sx={{ fontSize: '1.05rem', userSelect: 'none' }}>
+                    {IS_LAMP ? lampTurnText(verse) : (<>
                     {mode === 'turnBasedReview' && `(${verse.currentReviewTurn || 1}차 / 목표 ${targetTurn}차)`}
                     {mode === 'turnBasedNew' && `(${IS_LAMP ? '새 구절' : '뉴'} ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForNew}차)`}
                     {mode === 'turnBasedRecent' && `(최근 ${verse.currentReviewTurn || 1}차 / 목표 ${targetTurnForRecent}차)`}
+                    </>)}
                 </Typography>
             )}
         </Box>

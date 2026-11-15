@@ -78,7 +78,7 @@ const LAMP_EMPTY_HINT = {
 
 const ReviewDashboard = ({
     settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn,
-    modePoolCount, hasSchedule, onOpenSchedule,
+    modePoolCount, hasSchedule, onOpenSchedule, schedule,
 }) => {
     const { fontType, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
 
@@ -91,6 +91,10 @@ const ReviewDashboard = ({
     const modeIsEmpty = IS_LAMP && currentTurn !== null && modePoolCount === 0;
     const canAdvanceTurn = currentTurn !== null && verses.length === 0 && !modeIsEmpty;
     const needsSchedule = IS_LAMP && mode === 'turnBasedReview' && !hasSchedule && modePoolCount > 0;
+    const sc = settings.selectedCategories || [], ss = settings.selectedSubcategories || [];
+    const filtered = !(sc.includes('전체') || sc.length === 0) || !(ss.includes('전체') || ss.length === 0);
+    const filterLabel = [...sc.filter(x => x !== '전체'), ...ss.filter(x => x !== '전체')].join(' · ');
+    const fmtMD = (d) => { const m = String(d || '').match(/^\d{4}-(\d{2})-(\d{2})/); return m ? `${+m[1]}/${+m[2]}` : d; };
     const handleModeChange = (event, newMode) => {
         if (newMode !== null) setters.setMode(newMode);
     };
@@ -124,9 +128,23 @@ const ReviewDashboard = ({
                 <Paper variant="outlined" sx={{ p: 2.5 }}>
                     <Typography variant="h6" sx={{ mb: 1.5 }}>오늘의 복습</Typography>
                     {modeIsEmpty ? (
-                        <Typography color="text.secondary" sx={{ py: 1 }}>{LAMP_EMPTY_HINT[mode]}</Typography>
+                        filtered ? (
+                            // 분류를 걸어 둔 탓이면 그 분류를 보여 준다(R4)
+                            <Box sx={{ py: 1 }}>
+                                <Typography color="text.secondary">지금 고른 분류({filterLabel})에는 이 방식으로 볼 구절이 없습니다.</Typography>
+                                <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => { setters.setSelectedCategories(['전체']); setters.setSelectedSubcategories(['전체']); }}>분류를 전체로</Button>
+                            </Box>
+                        ) : (
+                            <Typography color="text.secondary" sx={{ py: 1 }}>{LAMP_EMPTY_HINT[mode]}</Typography>
+                        )
                     ) : (
                         <ReviewReadyInfo verses={verses} settings={settings} remainingToday={remainingToday} />
+                    )}
+                    {IS_LAMP && mode === 'turnBasedReview' && hasSchedule && schedule && (
+                        <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                            <Typography variant="body2" color="text.secondary">{targetTurn}차 일정 {fmtMD(schedule.startDate)}~{fmtMD(schedule.endDate)}</Typography>
+                            <Button size="small" onClick={onOpenSchedule}>고치기</Button>
+                        </Box>
                     )}
                     {needsSchedule && (
                         <Box sx={{ mt: 2, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>

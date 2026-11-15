@@ -4,6 +4,7 @@
 // 트리 구조 보기(VerseTreePage)의 복습이 홈과 100% 동일하게 통계/차수에 반영되도록 한다.
 // ⚠️ 공개판: 날짜는 getKSTDateString(YYYY-MM-DD) 사용. 홈 코드는 건드리지 않음.
 
+import { T } from '../terms';
 import { saveDataToLocal, loadDataFromLocal } from '../api/localStorageApi';
 import { REVIEW_LOG_KEY } from '../constants';
 import { getKSTDateString } from './dateUtils';
@@ -58,9 +59,9 @@ export const buildReviewUpdates = (verse, mode, turns = {}) => {
 
 // 차수별 모드 → 설정 키 / 세터 이름 / 사람이 읽는 이름
 export const TURN_MODE_META = {
-  turnBasedReview: { key: 'targetTurn', setter: 'setTargetTurn', label: '복습구절' },
-  turnBasedNew: { key: 'targetTurnForNew', setter: 'setTargetTurnForNew', label: '뉴구절' },
-  turnBasedRecent: { key: 'targetTurnForRecent', setter: 'setTargetTurnForRecent', label: '최근구절' },
+  turnBasedReview: { key: 'targetTurn', setter: 'setTargetTurn', label: T.review },
+  turnBasedNew: { key: 'targetTurnForNew', setter: 'setTargetTurnForNew', label: T.newV },
+  turnBasedRecent: { key: 'targetTurnForRecent', setter: 'setTargetTurnForRecent', label: T.recent },
 };
 
 // 현재 차수를 다음 차수로 진급시킨다. 완료 이력(maxCompletedTurn*)은 지우지 않으므로

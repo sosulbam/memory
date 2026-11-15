@@ -48,7 +48,7 @@ const TestSetup = ({ categories, allVerses, onStartTest }) => {
 
   return (
     <Paper elevation={3} sx={{ p: { xs: 2, sm: 4 }, mt: 4 }}>
-      <Typography variant="h4" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
+      <Typography variant={IS_LAMP ? "h6" : "h4"} gutterBottom align={IS_LAMP ? "left" : "center"} sx={{ fontWeight: 'bold' }}>
         암송 시험 설정
       </Typography>
       <FormControl fullWidth margin="normal">

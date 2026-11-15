@@ -18,7 +18,8 @@ export const LampFocusHeader = ({
   const { mode } = settings;
   const { sessionCompletedCount, totalCompletedCount } = sessionStats;
   const completedBefore = dailyProgress?.completedToday || 0;
-  const doneToday = completedBefore + sessionCompletedCount;
+  const doneToday = completedBefore + sessionCompletedCount;      // 오늘 몫 진행(차수별 복습 기준)
+  const todayTotal = (dailyProgress?.todayBase || 0) + sessionCompletedCount; // 머리줄 「오늘」 = 오늘 전체 복습 수
   const hasDailyGoal = mode === 'turnBasedReview' && remainingToday !== null;
   const dailyTotal = hasDailyGoal ? remainingToday + doneToday : 0;
   const dailyPercent = dailyTotal > 0 ? Math.round((doneToday / dailyTotal) * 100) : 0;
@@ -47,7 +48,7 @@ export const LampFocusHeader = ({
             <>
               <Typography sx={stat}>남은 {versesCount}</Typography>
               {hasDailyGoal && <Typography sx={{ ...stat, fontWeight: 700 }}>오늘 몫 {remainingToday}</Typography>}
-              <Typography sx={stat}>오늘 {doneToday}</Typography>
+              <Typography sx={stat}>오늘 {todayTotal}</Typography>
             </>
           )}
         </Box>
@@ -96,6 +97,8 @@ export const LampFocusBar = ({ mode, onAgain, onDone, onMenu, onPrev, onNext, on
   <Box onClick={(e) => e.stopPropagation()} sx={{
     position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 3,
     display: 'flex', gap: 1, alignItems: 'stretch',
+    // PC: 카드 폭에 맞춰 가운데로(N16)
+    '@media (min-width:700px)': { left: '50%', right: 'auto', width: 600, transform: 'translateX(-50%)', px: 0, background: 'none' },
     px: 'max(16px, env(safe-area-inset-left, 0px))', pt: 1.5, pb: 'calc(14px + var(--sab))',
     background: 'linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0))',
     '@media (max-height:500px)': { pt: 0.75, pb: 'calc(8px + var(--sab))', '& .MuiButton-root': { minHeight: 44 } },

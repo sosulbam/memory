@@ -1,5 +1,6 @@
 // src/pages/Stats.js
 import { IS_LAMP } from '../edition';
+import { T } from '../terms';
 import React, { useEffect, useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select, Typography, Box, Paper, Grid, CircularProgress, Chip } from '@mui/material';
@@ -67,6 +68,9 @@ function Stats() {
       setIsLoading(false);
     };
     loadStatsData();
+    // 등불판: 복습 기록 초기화 뒤 다시 읽는다(R2)
+    window.addEventListener('lamp-data-reset', loadStatsData);
+    return () => window.removeEventListener('lamp-data-reset', loadStatsData);
   }, [period]);
 
   const totalForPeriod = useMemo(() => stats.dailyReviewCounts.reduce((sum, day) => sum + day.count, 0), [stats.dailyReviewCounts]);
@@ -78,6 +82,36 @@ function Stats() {
     <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: '1200px', margin: 'auto' }}>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
+          {IS_LAMP ? (
+            // 등불판: 숫자를 한 묶음으로(새 구절·최근·복습 구절의 합 = 외우는 구절) — 서로 어긋나 보이던 「기존 암송」 셈은 뺀다(N9)
+            <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>전체 구절</Typography>
+              <Box component="dl" sx={{ m: 0 }}>
+                {[
+                  ['외우는 구절', stats.memorizedTotal, true],
+                  ['· 새 구절', stats.newTotal],
+                  ['· 최근 구절', stats.recentTotal],
+                  ['· 복습 구절', Math.max(0, stats.memorizedTotal - stats.newTotal - stats.recentTotal)],
+                  ['미암송', stats.unmemorizedTotal],
+                  ['오답 표시', stats.wrongTotal],
+                  ['즐겨찾기', stats.favoriteTotal],
+                ].map(([k, v, strong]) => (
+                  <Box key={k} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid', borderColor: 'divider', pl: k.startsWith('·') ? 2 : 0 }}>
+                    <Typography component="dt" variant="body2" color={strong ? 'text.primary' : 'text.secondary'} sx={{ fontWeight: strong ? 700 : 400 }}>{k.replace(/^· /, '')}</Typography>
+                    <Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{v}개</Typography>
+                  </Box>
+                ))}
+              </Box>
+              {Object.keys(stats.memorizationByYear || {}).length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 0.5 }}>해마다 새로 외운 구절 <Typography component="span" variant="caption" color="text.secondary">(암송 시작일 기준)</Typography></Typography>
+                  {Object.keys(stats.memorizationByYear).sort((a, b) => b.localeCompare(a)).map(year => (
+                    <Typography key={year} variant="body2">{year}년 {stats.memorizationByYear[year]}개</Typography>
+                  ))}
+                </Box>
+              )}
+            </Paper>
+          ) : (
           <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" gutterBottom>전체 구절 현황</Typography>
             <Typography>• 총 등록 구절: <strong>{stats.totalVerses}</strong>개</Typography>
@@ -95,6 +129,7 @@ function Stats() {
               ))}
             </Box>
           </Paper>
+          )}
         </Grid>
         <Grid item xs={12} md={6}>
           <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -107,11 +142,11 @@ function Stats() {
           <Paper elevation={IS_LAMP ? 0 : 3} variant={IS_LAMP ? 'outlined' : 'elevation'} sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>{IS_LAMP ? '오늘 복습 내역' : '✅ 오늘 복습한 구절 현황'}</Typography>
             <Grid container spacing={1}>
-              <Grid item xs={6} sm={4}><Typography>일반/차수별: <HighlightedCount value={stats.todayStats.general} />회</Typography></Grid>
-              <Grid item xs={6} sm={4}><Typography>뉴구절: <HighlightedCount value={stats.todayStats.new} />회</Typography></Grid>
-              <Grid item xs={6} sm={4}><Typography>최근구절: <HighlightedCount value={stats.todayStats.recent} />회</Typography></Grid>
+              <Grid item xs={6} sm={4}><Typography>{IS_LAMP ? '복습 구절' : '일반/차수별'}: <HighlightedCount value={stats.todayStats.general} />회</Typography></Grid>
+              <Grid item xs={6} sm={4}><Typography>{T.newV}: <HighlightedCount value={stats.todayStats.new} />회</Typography></Grid>
+              <Grid item xs={6} sm={4}><Typography>{T.recent}: <HighlightedCount value={stats.todayStats.recent} />회</Typography></Grid>
               <Grid item xs={6} sm={4}><Typography>즐겨찾기: <HighlightedCount value={stats.todayStats.favorite} />회</Typography></Grid>
-              <Grid item xs={6} sm={4}><Typography>오답구절: <HighlightedCount value={stats.todayStats.wrong} />회</Typography></Grid>
+              <Grid item xs={6} sm={4}><Typography>{T.wrong}: <HighlightedCount value={stats.todayStats.wrong} />회</Typography></Grid>
             </Grid>
           </Paper>
         </Grid>
@@ -135,7 +170,7 @@ function Stats() {
                 <XAxis dataKey="date" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#82ca9d" name="복습 횟수"><LabelList dataKey="count" position="top" /></Bar>
+                <Bar dataKey="count" fill={IS_LAMP ? "#1C1C1A" : "#82ca9d"} name="복습 횟수"><LabelList dataKey="count" position="top" /></Bar>
               </BarChart>
             </ResponsiveContainer>
           </Paper>

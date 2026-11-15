@@ -22,6 +22,10 @@ const normRef = (r) => String(r || '').replace(/\s/g, '');
 // 이 화면의 선택은 기기에 기억한다(화면을 옮겼다 와도 그대로, 검토 35번)
 const PREF_KEY = 'recitation-app-packs-prefs';
 const loadPrefs = () => { try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; } };
+// 「겹치는 장절 건너뛰기」로 넣지 않은 구절 id — 팩이 「덜 들어간」 것처럼 보이지 않게 기억한다(N3)
+const SKIP_KEY = 'recitation-app-packs-skipped';
+const loadSkipped = () => { try { return JSON.parse(localStorage.getItem(SKIP_KEY)) || {}; } catch { return {}; } };
+const saveSkipped = (m) => { try { localStorage.setItem(SKIP_KEY, JSON.stringify(m)); } catch { /* 없어도 동작은 같다 */ } };
 const savePrefs = (p) => { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch { /* 저장 못 해도 동작은 같다 */ } };
 
 const PacksPage = () => {
@@ -39,6 +43,7 @@ const PacksPage = () => {
   const [asNew, setAsNew] = useState(() => loadPrefs().asNew !== false);
   useEffect(() => { savePrefs({ skipSameRef, asNew }); }, [skipSameRef, asNew]);
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [skipped, setSkipped] = useState(loadSkipped);
   const focusRef = useRef(null);
 
   useEffect(() => {
@@ -75,12 +80,17 @@ const PacksPage = () => {
       const added = [];
       let sameId = 0;
       let sameRef = 0;
+      const skippedIds = new Set(skipped[pack.id] || []);
       data.verses.forEach((v) => {
         if (ids.has(v.id)) { sameId += 1; return; }
-        if (skipSameRef && refs.has(normRef(v.장절))) { sameRef += 1; return; }
+        if (skipSameRef && refs.has(normRef(v.장절))) { sameRef += 1; skippedIds.add(v.id); return; }
+        skippedIds.delete(v.id);
         no += 1;
         added.push(asNew ? { ...v, 번호: no, 뉴구절여부: true } : { ...v, 번호: no });
       });
+      const nextSkipped = { ...skipped, [pack.id]: [...skippedIds] };
+      if (!skippedIds.size) delete nextSkipped[pack.id];
+      setSkipped(nextSkipped); saveSkipped(nextSkipped);
       if (added.length > 0) {
         saveDataToLocal(VERSES_DATA_KEY, [...list, ...added]);
         await loadData();
@@ -110,6 +120,8 @@ const PacksPage = () => {
       saveDataToLocal(VERSES_DATA_KEY, keep);
       saveDataToLocal(REVIEW_STATUS_KEY, status);
       saveDataToLocal(TAGS_DATA_KEY, tags);
+      const nextSkipped = { ...skipped }; delete nextSkipped[pack.id];
+      setSkipped(nextSkipped); saveSkipped(nextSkipped);
       await loadData();
       showSnackbar(`「${pack.name}」 ${gone.size}구절을 뺐습니다`, 'success');
     } finally {
@@ -152,7 +164,8 @@ const PacksPage = () => {
       <Stack spacing={1.5} sx={{ mt: 1 }}>
         {index && index.packs.map((p) => {
           const have = installed[p.id] || 0;
-          const full = have >= p.count;
+          const skippedN = (skipped[p.id] || []).length;
+          const full = have > 0 && have + skippedN >= p.count;
           const focused = p.id === focusId;
           return (
             <Paper
@@ -164,12 +177,14 @@ const PacksPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
                 <Typography variant="h6" sx={{ fontFamily: "'Nanum Myeongjo', serif", fontWeight: 700 }}>{p.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{p.count}구절{p.groups > 1 ? ` · ${p.groups}묶음` : ''}</Typography>
-                {have > 0 && <Chip size="small" color={full ? 'success' : 'warning'} label={full ? '넣음' : `${have}/${p.count} 넣음`} sx={{ ml: 'auto' }} />}
+                {have > 0 && <Chip size="small" variant={full ? 'filled' : 'outlined'} label={full ? '넣음' : `${have}/${p.count} 넣음`} sx={{ ml: 'auto', ...(full ? { bgcolor: 'text.primary', color: 'background.paper' } : {}) }} />}
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{p.description}</Typography>
+              {p.note && <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>{p.note}</Typography>}
+              {have > 0 && skippedN > 0 && <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 0.5 }}>{have}구절 넣음 · 겹친 {skippedN}구절은 다른 팩에 있어 건너뛰었습니다.</Typography>}
               <Box sx={{ display: 'flex', gap: 1, mt: 1.5, justifyContent: 'flex-end' }}>
                 {have > 0 && (
-                  <Button size="small" color="error" variant="text" disabled={busyId !== null} onClick={() => setRemoveTarget({ ...p, have })}>빼기</Button>
+                  <Button size="small" variant="text" disabled={busyId !== null} onClick={() => setRemoveTarget({ ...p, have })} sx={{ color: '#A3271F' }}>빼기</Button>
                 )}
                 {!full && (
                   <Button size="small" variant="contained" disabled={busyId !== null} onClick={() => addPack(p)}>
@@ -186,7 +201,7 @@ const PacksPage = () => {
         <DialogTitle>{removeTarget?.name} 빼기</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            이 팩의 {removeTarget?.have}구절과 그 구절들의 차수·오답·태그 표시를 지웁니다. 날마다 몇 구절 복습했는지 남긴 통계는 그대로 남습니다.
+            이 팩의 {removeTarget?.have}구절과 그 구절들에 붙은 차수, 오답, 태그 표시를 지웁니다. 날마다 몇 구절 복습했는지 남긴 통계는 그대로 남습니다.
             직접 넣은 구절과 다른 팩도 그대로입니다. 나중에 다시 넣으면 구절은 돌아오지만 차수는 처음부터입니다.
           </DialogContentText>
         </DialogContent>

@@ -50,7 +50,7 @@ const ActionBar = ({ verse, onStatusToggle, onTagDialogOpen, onCopy }) => {
         <Box display="flex" gap={1} flexWrap="wrap" justifyContent="center">
           {items.map(it => (
             <Button key={it.field} onClick={(e) => handleToggle(e, it.field)} variant={it.on ? 'contained' : 'outlined'} size="small" aria-pressed={!!it.on} sx={{ minWidth: 72 }}>
-              {it.label}{it.on ? ' ✓' : ''}
+              {it.label}
             </Button>
           ))}
         </Box>

@@ -5,3 +5,6 @@
 export const IS_LAMP = process.env.REACT_APP_EDITION === 'lamp';
 export const APP_NAME = IS_LAMP ? '등불 암송' : '말씀사랑';
 export const PUBLIC_URL = process.env.PUBLIC_URL || '';
+
+// 등불판 버전(설정 맨 아래에 한 줄로 보인다) — 배포할 때 올린다
+export const LAMP_VERSION = '1.2 (2026-11-16)';

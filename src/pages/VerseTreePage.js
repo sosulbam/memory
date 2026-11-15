@@ -4,6 +4,7 @@
 //  - 대카테고리 클릭 → 소카테고리 목록 펼침
 //  - 소카테고리 클릭 → 제목·장절 목록 펼침
 //  - 제목·장절 클릭 → 해당 구절 본문이 카드형태 아코디언으로 열림
+import { IS_LAMP } from '../edition';
 import React, { useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, Paper, Collapse, Chip, Button, Divider, Stack,
@@ -38,10 +39,14 @@ import { loadDataFromLocal, saveDataToLocal } from '../api/localStorageApi';
 import { VERSETREE_PREFS_KEY } from '../constants';
 
 // 대카테고리마다 돌아가며 부여하는 은은한 색 팔레트 (좌측 악센트 바 & 칩)
-const PALETTE = [
+// 등불판은 먹색 한 가지(사이트 톤) — 시리즈마다 색이 바뀌지 않게
+const PALETTE = IS_LAMP ? ['#1C1C1A'] : [
   '#5C6BC0', '#26A69A', '#EC407A', '#FFA726',
   '#7E57C2', '#42A5F5', '#66BB6A', '#EF5350',
 ];
+const ACCENT = IS_LAMP ? '#1C1C1A' : '#5C6BC0';
+const HOT = IS_LAMP ? '#1C1C1A' : '#EC407A';
+const DONE = IS_LAMP ? '#2E6B47' : '#66BB6A';
 
 const SUB_FALLBACK = '기타';
 
@@ -122,9 +127,9 @@ const VerseRow = React.memo(function VerseRow({
           <Typography sx={{ lineHeight: 1.8, whiteSpace: 'pre-line', wordBreak: 'keep-all', color: 'text.primary' }}>
             {v.본문}
           </Typography>
-          <Typography align="right" sx={{ mt: 1.25, color, fontWeight: 700, fontSize: '0.85rem' }}>
+          {!IS_LAMP && <Typography align="right" sx={{ mt: 1.25, color, fontWeight: 700, fontSize: '0.85rem' }}>
             {v.장절}
-          </Typography>
+          </Typography>}
 
           {/* 구절 처리 툴 */}
           <Divider sx={{ my: 1, borderColor: `${color}33` }} />
@@ -529,10 +534,10 @@ const VerseTreePage = () => {
         <Typography variant="body2" color="text.secondary">
           {reviewMode ? (
             <>
-              <b style={{ color: '#5C6BC0' }}>{currentModeLabel} {getTurnTargetLabel(treeMode, settings)}</b>
+              <b style={{ color: ACCENT }}>{currentModeLabel} {getTurnTargetLabel(treeMode, settings)}</b>
               {' · '}남은 <b>{reviewData.remainingCount}</b> · 완료 <b>{reviewData.completedCount}</b>
               {hasDailyGoal && dailyLimit && (
-                <>{' · '}오늘 <b style={{ color: '#EC407A' }}>{reviewData.activeCount}</b>개</>
+                <>{' · '}오늘 <b style={{ color: HOT }}>{reviewData.activeCount}</b>개</>
               )}
             </>
           ) : (
@@ -579,7 +584,7 @@ const VerseTreePage = () => {
           onClick={handleAdvanceTurn}
           sx={{ mb: 1 }}
         >
-          🎉 {currentModeLabel} {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
+          {IS_LAMP ? '' : '🎉 '}{currentModeLabel} {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
         </Button>
       )}
 
@@ -626,7 +631,7 @@ const VerseTreePage = () => {
       {reviewMode && hasDailyGoal && dailyTotal > 0 && (
         <Box sx={{ mb: 0.5 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: dailyPct >= 100 ? '#66BB6A' : '#EC407A' }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: dailyPct >= 100 ? DONE : HOT }}>
               {dailyPct >= 100 ? '🎉 오늘 분량 완료!' : '오늘 분량 진행률'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -642,7 +647,7 @@ const VerseTreePage = () => {
               backgroundColor: 'rgba(0,0,0,0.08)',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 5,
-                backgroundColor: dailyPct >= 100 ? '#66BB6A' : '#EC407A',
+                backgroundColor: dailyPct >= 100 ? DONE : HOT,
               },
             }}
           />
@@ -657,7 +662,7 @@ const VerseTreePage = () => {
           sx={{ display: { xs: 'none', sm: 'block' }, mb: 1 }}
         >
           ⌨️ PC 단축키 · <b>Space</b>/<b>.</b>/<b>s</b> 본문 보기 · <b>Enter</b> 복습 완료
-          (표시된 <span style={{ color: '#5C6BC0' }}>맨 위 구절</span>부터 하나씩)
+          (표시된 <span style={{ color: ACCENT }}>맨 위 구절</span>부터 하나씩)
         </Typography>
       )}
       {/* 도구 버튼 기본 노출 + 전체 펼치기/접기 (고정 바 안) */}
@@ -800,6 +805,7 @@ const VerseTreePage = () => {
                     color,
                     fontWeight: 700,
                     height: 22,
+                    ...(IS_LAMP ? { minWidth: 44 } : {}),
                   }}
                 />
               </Box>
@@ -809,10 +815,12 @@ const VerseTreePage = () => {
                 <Box sx={{ px: 1.5, pb: 1.5, pt: 0.5 }}>
                   {cat.subs.map((sub) => {
                     const subKey = `${cat.name}|||${sub.name}`;
-                    const subOpen = openSubs.has(subKey);
+                    // 등불판: 작은 분류가 하나뿐이고 이름이 같으면(「5확신 > 5확신」) 한 단계로
+                    const flat = IS_LAMP && cat.subs.length === 1 && (sub.name === cat.name || sub.name === SUB_FALLBACK);
+                    const subOpen = flat || openSubs.has(subKey);
                     return (
                       <Box key={subKey} sx={{ mb: 0.5 }}>
-                        <Box
+                        {!flat && <Box
                           onClick={() => toggle(setOpenSubs, subKey)}
                           sx={{
                             display: 'flex',
@@ -837,7 +845,7 @@ const VerseTreePage = () => {
                           <Typography variant="caption" color="text.secondary">
                             {sub.verses.length}구절
                           </Typography>
-                        </Box>
+                        </Box>}
 
                         {/* 제목 · 장절 목록 */}
                         <Collapse in={subOpen} timeout="auto" unmountOnExit>

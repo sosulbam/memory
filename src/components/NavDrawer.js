@@ -9,7 +9,6 @@ import { saveDataToLocal } from '../api/localStorageApi';
 import ControlPanel from './ControlPanel';
 
 import HomeIcon from '@mui/icons-material/Home';
-import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
 import { IS_LAMP } from '../edition';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PaletteIcon from '@mui/icons-material/Palette';
@@ -25,6 +24,19 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import TuneIcon from '@mui/icons-material/Tune';
+// 등불판: 선 아이콘 한 벌(N17)
+import HomeOutlined from '@mui/icons-material/HomeOutlined';
+import FormatListBulletedOutlined from '@mui/icons-material/FormatListBulletedOutlined';
+import AccountTreeOutlined from '@mui/icons-material/AccountTreeOutlined';
+import LibraryAddOutlined from '@mui/icons-material/LibraryAddOutlined';
+import EditNoteOutlined from '@mui/icons-material/EditNoteOutlined';
+import LocalOfferOutlined from '@mui/icons-material/LocalOfferOutlined';
+import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
+import InsertChartOutlined from '@mui/icons-material/InsertChartOutlined';
+import TuneOutlined from '@mui/icons-material/TuneOutlined';
+import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import RecordVoiceOverOutlined from '@mui/icons-material/RecordVoiceOverOutlined';
+import PaletteOutlined from '@mui/icons-material/PaletteOutlined';
 
 const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus }) => {
   // 등불판은 이동 메뉴를 먼저 보이게 복습 설정을 접어 둔다(「일정 정하기」로 열 때만 펼침)
@@ -122,11 +134,21 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
     return `남은 ${remainingDays}일간 하루 ${dailyGoal}개 암송 필요`;
   }, [settings.mode, settings.targetTurn, settings.selectedCategories, settings.selectedSubcategories, turnScheduleData, originalVerses]);
 
-  const menuItems = [
+  const menuItems = IS_LAMP ? [
+    { text: '홈', icon: <HomeOutlined />, path: '/' },
+    { text: '구절 목록', icon: <FormatListBulletedOutlined />, path: '/list' },
+    { text: '구절 구조 보기', icon: <AccountTreeOutlined />, path: '/tree' },
+    { text: '암송 팩', icon: <LibraryAddOutlined />, path: '/packs' },
+    { text: '구절 관리', icon: <EditNoteOutlined />, path: '/manage' },
+    { text: '태그 관리', icon: <LocalOfferOutlined />, path: '/tags' },
+    { text: '암송 시험', icon: <AssignmentOutlined />, path: '/test' },
+    { text: '통계', icon: <InsertChartOutlined />, path: '/stats' },
+    { text: '설정', icon: <TuneOutlined />, path: '/settings' },
+    { text: '사용 안내', icon: <HelpOutlineIcon />, path: '/guide' },
+  ] : [
     { text: '홈', icon: <HomeIcon />, path: '/' },
     { text: '구절 목록', icon: <ViewListIcon />, path: '/list' },
     { text: '구절 구조 보기', icon: <AccountTreeIcon />, path: '/tree' },
-    ...(IS_LAMP ? [{ text: '암송 팩', icon: <LibraryAddIcon />, path: '/packs' }] : []),
     { text: '구절 관리', icon: <ConstructionIcon />, path: '/manage' },
     { text: '태그 관리', icon: <StyleIcon />, path: '/tags' },
     { text: '암송 시험', icon: <AssignmentIcon />, path: '/test' },
@@ -136,7 +158,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
   ];
 
   return (
-    <Drawer anchor="left" open={open} onClose={onClose} PaperProps={{ sx: { pt: 'var(--sat)', pb: 'var(--sab)', boxSizing: 'border-box' } }}>
+    <Drawer anchor="left" open={open} onClose={onClose} disableRestoreFocus={IS_LAMP} PaperProps={{ sx: { pt: 'var(--sat)', pb: 'var(--sab)', boxSizing: 'border-box' } }}>
       <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', height: '100%' }} role="presentation">
         <List>
           <ListItem disablePadding><ListItemButton component={RouterLink} to="/" onClick={onClose}><ListItemIcon>{menuItems[0].icon}</ListItemIcon><ListItemText primary={menuItems[0].text} /></ListItemButton></ListItem>
@@ -144,19 +166,19 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
             <>
           {menuItems.slice(1).map((item) => (<ListItem key={item.text} disablePadding><ListItemButton component={RouterLink} to={item.path} onClick={onClose}><ListItemIcon>{item.icon}</ListItemIcon><ListItemText primary={item.text} /></ListItemButton></ListItem>))}
               <Divider sx={{ my: 1 }} />
-          <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsIcon /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <ListItemButton onClick={() => setOpenSetup(!openSetup)}><ListItemIcon><SettingsOutlined /></ListItemIcon><ListItemText primary="복습 설정" />{openSetup ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
           <Collapse in={openSetup} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2 }}>
               <ControlPanel settings={settings} setters={setters} displayedCategories={displayedCategories} displayedSubcategories={displayedSubcategories} turnSchedule={(turnScheduleData && turnScheduleData[settings.targetTurn]) || { startDate: '', endDate: '' }} onSaveTurnSchedule={handleSaveTurnSchedule} dailyGoalDisplay={dailyGoalDisplay} turnOptions={turnOptions} />
             </Box>
           </Collapse>
 
-          <ListItemButton onClick={() => setOpenTTS(!openTTS)}><ListItemIcon><RecordVoiceOverIcon /></ListItemIcon><ListItemText primary="음성 및 폰트 설정" />{openTTS ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <ListItemButton onClick={() => setOpenTTS(!openTTS)}><ListItemIcon><RecordVoiceOverOutlined /></ListItemIcon><ListItemText primary="음성·글꼴" />{openTTS ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
           <Collapse in={openTTS} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <FormControl size="small" fullWidth>
-                <InputLabel>폰트 선택</InputLabel>
-                <Select value={fontType} label="폰트 선택" onChange={(e) => setFontType(e.target.value)}>
+                <InputLabel>글꼴</InputLabel>
+                <Select value={fontType} label="글꼴" onChange={(e) => setFontType(e.target.value)}>
                   <MenuItem value="gothic" style={{ fontFamily: 'sans-serif' }}>고딕 (기본)</MenuItem>
                   <MenuItem value="myeongjo" style={{ fontFamily: "'Nanum Myeongjo', serif", fontWeight: 'bold' }}>나눔 명조</MenuItem>
                   <MenuItem value="batang" style={{ fontFamily: "'Gowun Batang', serif", fontWeight: 'bold' }}>고운 바탕</MenuItem>
@@ -195,7 +217,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen, focus 
             </Box>
           </Collapse>
 
-          <ListItemButton onClick={() => setOpenTheme(!openTheme)}><ListItemIcon><PaletteIcon /></ListItemIcon><ListItemText primary="테마 설정" />{openTheme ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
+          <ListItemButton onClick={() => setOpenTheme(!openTheme)}><ListItemIcon><PaletteOutlined /></ListItemIcon><ListItemText primary="테마 설정" />{openTheme ? <ExpandLess /> : <ExpandMore />}</ListItemButton>
           <Collapse in={openTheme} timeout="auto" unmountOnExit>
             <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {Object.keys(THEMES).map(key => (

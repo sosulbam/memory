@@ -1,4 +1,5 @@
 // src/pages/VerseManager.js
+import { T, typeLabel } from '../terms';
 import React, { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
@@ -7,7 +8,7 @@ import {
   TableHead, TableRow, Paper, Grid, CircularProgress, Alert, Snackbar, Dialog, DialogActions,
   DialogContent, DialogTitle, Chip, IconButton, TablePagination, Stack, Autocomplete, ToggleButtonGroup,
   ToggleButton, FormControl, InputLabel, Select, MenuItem, Card, CardContent, Collapse,
-  FormGroup, FormControlLabel, Checkbox, Divider
+  FormGroup, FormControlLabel, Checkbox, Divider, Menu
 } from '@mui/material';
 
 import DownloadIcon from '@mui/icons-material/Download';
@@ -25,6 +26,7 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import FolderZipIcon from '@mui/icons-material/FolderZip';
 import DescriptionIcon from '@mui/icons-material/Description';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 import { DataContext } from '../contexts/DataContext';
 import { AppSettingsContext } from '../contexts/AppSettingsContext';
@@ -54,12 +56,45 @@ const MANAGER_FONT_SIZE_MAP = {
 
 function VerseRow({ verse, onEdit, onDelete, onTagOpen, listFontSize }) {
   const [open, setOpen] = useState(false);
+  const [menuEl, setMenuEl] = useState(null);
   const fs = MANAGER_FONT_SIZE_MAP[listFontSize] || MANAGER_FONT_SIZE_MAP.medium;
+  if (IS_LAMP) {
+    // 등불판: [제목 / 장절] 두 줄 + 「⋯」 메뉴(좁은 폰에서도 제목이 끊기지 않게, N1)
+    return (
+      <React.Fragment>
+        <TableRow sx={{ '& > *': { borderBottom: 'unset' } }}>
+          <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer' }}>
+            <Typography sx={{ fontSize: fs.title, fontWeight: 600 }}>{verse.제목}</Typography>
+            <Typography color="text.secondary" sx={{ fontSize: fs.ref, whiteSpace: 'nowrap' }}>{verse.장절}</Typography>
+          </TableCell>
+          <TableCell align="right" sx={{ width: 48, pl: 0 }}>
+            <IconButton size="small" aria-label={`${verse.제목} 메뉴`} onClick={(e) => setMenuEl(e.currentTarget)}><MoreVertIcon fontSize="small" /></IconButton>
+            <Menu anchorEl={menuEl} open={!!menuEl} onClose={() => setMenuEl(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
+              <MenuItem onClick={() => { setMenuEl(null); onEdit(verse); }}><EditIcon fontSize="small" sx={{ mr: 1 }} />고치기</MenuItem>
+              <MenuItem onClick={() => { setMenuEl(null); onTagOpen(verse); }}><LabelIcon fontSize="small" sx={{ mr: 1 }} />태그</MenuItem>
+              <Divider />
+              <MenuItem onClick={() => { setMenuEl(null); onDelete(verse.id); }} sx={{ color: 'error.main' }}><DeleteIcon fontSize="small" sx={{ mr: 1 }} />지우기</MenuItem>
+            </Menu>
+          </TableCell>
+        </TableRow>
+        <TableRow>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <Box sx={{ my: 1, p: 2, bgcolor: 'background.default', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                <Typography sx={{ whiteSpace: 'pre-line', fontSize: fs.body, lineHeight: 1.7 }}>{verse.본문}</Typography>
+                {verse.암송시작일 && <Typography variant="caption" sx={{ mt: 1, display: 'block', color: 'text.secondary' }}>암송 시작일: {verse.암송시작일}</Typography>}
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </React.Fragment>
+    );
+  }
   return (
     <React.Fragment>
       <TableRow sx={{ '& > *': { borderBottom: 'unset' } }}>
         <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer', fontSize: fs.title }}>{verse.제목}</TableCell>
-        <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer', fontSize: fs.ref }}>{verse.장절}</TableCell>
+        <TableCell onClick={() => setOpen(!open)} sx={{ cursor: 'pointer', fontSize: fs.ref, ...(IS_LAMP ? { whiteSpace: 'nowrap', overflowWrap: 'normal' } : {}) }}>{verse.장절}</TableCell>
         <TableCell align="center">
           {IS_LAMP ? (
             // 등불판: 한 줄로, 휴지통은 떼어 놓고 이름을 단다(검토 18번)
@@ -175,7 +210,7 @@ function VerseManager() {
 
   const handleAddOrUpdateVerse = async () => {
     if (!newVerse.제목 || !newVerse.본문 || !newVerse.카테고리 || !newVerse.장절) {
-      showSnackbar('카테고리, 제목, 장절, 본문은 필수입니다.', 'warning');
+      showSnackbar(IS_LAMP ? `${T.cat}, 제목, 장절, 본문은 꼭 넣어야 합니다.` : '카테고리, 제목, 장절, 본문은 필수입니다.', 'warning');
       return;
     }
 
@@ -731,22 +766,94 @@ function VerseManager() {
       <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}><Alert severity={snackbar.severity}>{snackbar.message}</Alert></Snackbar>
 
       <Paper elevation={2} sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>{editingId ? '구절 수정' : '새 구절 추가'}</Typography>
+        <Typography variant="h6" gutterBottom>{IS_LAMP ? (editingId ? '구절 고치기' : '구절 추가') : (editingId ? '구절 수정' : '새 구절 추가')}</Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}><Autocomplete freeSolo options={categoryOptions} value={newVerse.카테고리} onInputChange={(e, val) => setNewVerse(p => ({ ...p, 카테고리: val, 소카테고리: e?.type === 'change' ? '' : p.소카테고리 }))} renderInput={(params) => <TextField {...params} label="카테고리 (*)" />} /></Grid>
-          <Grid item xs={12} sm={4}><Autocomplete freeSolo options={subcategoryOptions} value={newVerse.소카테고리} disabled={!newVerse.카테고리} onInputChange={(e, val) => setNewVerse(p => ({ ...p, 소카테고리: val }))} renderInput={(params) => <TextField {...params} label="소카테고리" />} /></Grid>
-          <Grid item xs={12} sm={4}><TextField fullWidth label="제목 (*)" value={newVerse.제목} onChange={(e) => setNewVerse({ ...newVerse, 제목: e.target.value })} /></Grid>
-          <Grid item xs={12} sm={4}><TextField fullWidth label="장절 (*)" value={newVerse.장절} onChange={(e) => setNewVerse({ ...newVerse, 장절: e.target.value })} /></Grid>
-          <Grid item xs={12} sm={4}><TextField fullWidth label="암송시작일" type="date" value={newVerse.암송시작일} onChange={(e) => setNewVerse({ ...newVerse, 암송시작일: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><TextField fullWidth label="본문 (*)" multiline rows={3} value={newVerse.본문} onChange={(e) => setNewVerse({ ...newVerse, 본문: e.target.value })} /></Grid>
-          <Grid item xs={12}><FormGroup row><FormControlLabel control={<Checkbox checked={newVerse.미암송여부 || false} onChange={e => setNewVerse({ ...newVerse, 미암송여부: e.target.checked })} />} label="미암송" /><FormControlLabel control={<Checkbox checked={newVerse.뉴구절여부 || false} onChange={e => setNewVerse({ ...newVerse, 뉴구절여부: e.target.checked })} />} label="뉴구절" /><FormControlLabel control={<Checkbox checked={newVerse.즐겨찾기 || false} onChange={e => setNewVerse({ ...newVerse, 즐겨찾기: e.target.checked })} />} label="즐겨찾기" /></FormGroup></Grid>
+          <Grid item xs={12} sm={4}><Autocomplete freeSolo options={categoryOptions} value={newVerse.카테고리} onInputChange={(e, val) => setNewVerse(p => ({ ...p, 카테고리: val, 소카테고리: e?.type === 'change' ? '' : p.소카테고리 }))} renderInput={(params) => <TextField {...params} label={IS_LAMP ? `${T.cat} (필수)` : `${T.cat} (*)`} />} /></Grid>
+          <Grid item xs={12} sm={4}><Autocomplete freeSolo options={subcategoryOptions} value={newVerse.소카테고리} disabled={!newVerse.카테고리} onInputChange={(e, val) => setNewVerse(p => ({ ...p, 소카테고리: val }))} renderInput={(params) => <TextField {...params} label={T.sub} />} /></Grid>
+          <Grid item xs={12} sm={4}> <TextField fullWidth label={IS_LAMP ? '제목 (필수)' : '제목 (*)'} value={newVerse.제목} onChange={(e) => setNewVerse({ ...newVerse, 제목: e.target.value })} /></Grid>
+          <Grid item xs={12} sm={4}> <TextField fullWidth label={IS_LAMP ? '장절 (필수)' : '장절 (*)'} value={newVerse.장절} onChange={(e) => setNewVerse({ ...newVerse, 장절: e.target.value })} /></Grid>
+          <Grid item xs={12} sm={4}><TextField fullWidth label={IS_LAMP ? '암송 시작일' : '암송시작일'} type="date" value={newVerse.암송시작일} onChange={(e) => setNewVerse({ ...newVerse, 암송시작일: e.target.value })} InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={4}><TextField fullWidth label={IS_LAMP ? '본문 (필수)' : '본문 (*)'} multiline rows={3} value={newVerse.본문} onChange={(e) => setNewVerse({ ...newVerse, 본문: e.target.value })} /></Grid>
+          <Grid item xs={12}><FormGroup row><FormControlLabel control={<Checkbox checked={newVerse.미암송여부 || false} onChange={e => setNewVerse({ ...newVerse, 미암송여부: e.target.checked })} />} label="미암송" /><FormControlLabel control={<Checkbox checked={newVerse.뉴구절여부 || false} onChange={e => setNewVerse({ ...newVerse, 뉴구절여부: e.target.checked })} />} label={T.newV} /><FormControlLabel control={<Checkbox checked={newVerse.즐겨찾기 || false} onChange={e => setNewVerse({ ...newVerse, 즐겨찾기: e.target.checked })} />} label="즐겨찾기" /></FormGroup></Grid>
         </Grid>
         <Box mt={2} display="flex" justifyContent="flex-end" gap={1}>
           {editingId && <Button variant="outlined" color="secondary" onClick={resetForm} startIcon={<CancelIcon />}>수정 취소</Button>}
-          <Button variant="contained" onClick={handleAddOrUpdateVerse} startIcon={<AddCircleOutlineIcon />} disabled={isSaving}>{editingId ? '구절 수정' : '새 구절 추가'}</Button>
+          <Button variant="contained" onClick={handleAddOrUpdateVerse} startIcon={<AddCircleOutlineIcon />} disabled={isSaving}>{IS_LAMP ? (editingId ? '고친 내용 저장' : '추가') : (editingId ? '구절 수정' : '새 구절 추가')}</Button>
         </Box>
       </Paper>
 
+      {IS_LAMP ? (
+        // 등불판: 엑셀 / 백업 받기 / 백업에서 되살리기 / 녹음 옮기기 — 파일을 고르기 전에는 실행 단추를 감춘다(R8)
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>엑셀로 넣기</Typography>
+            <ToggleButtonGroup value={uploadMode} exclusive size="small" fullWidth onChange={(e, val) => val && setUploadMode(val)} sx={{ mb: 1 }} aria-label="엑셀 넣는 방식">
+              <ToggleButton value="append">더하기</ToggleButton>
+              <ToggleButton value="update">고쳐 쓰기</ToggleButton>
+              <ToggleButton value="replace" sx={{ color: 'error.main' }}>모두 바꾸기</ToggleButton>
+            </ToggleButtonGroup>
+            <Typography variant="body2" color={uploadMode === 'replace' ? 'error.main' : 'text.secondary'} sx={{ mb: 1 }}>
+              {uploadMode === 'replace' ? '지금 구절·태그·복습 기록을 모두 지우고 엑셀 내용으로 바꿉니다.'
+                : uploadMode === 'update' ? '같은 구절은 엑셀 내용으로 고치고, 없는 구절은 더합니다. 복습 기록은 남습니다.'
+                : '이미 있는 구절은 건너뛰고 새 구절만 더합니다.'}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Button component="label" variant="outlined" startIcon={<UploadFileIcon />} size="small">
+                엑셀 파일 고르기
+                <FileField type="file" accept=".xlsx, .xls" onChange={handleFileSelect} />
+              </Button>
+              {selectedFile && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{selectedFile.name}</Typography>}
+              {selectedFile && (
+                <Button variant="contained" color={uploadMode === 'replace' ? 'error' : 'primary'} onClick={handleUpload} disabled={isSaving} size="small">
+                  {uploadMode === 'replace' ? '모두 바꾸기' : '넣기'}
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+              <Button variant="text" startIcon={<DownloadIcon />} onClick={handleTemplateDownload} size="small">빈 양식 받기</Button>
+              <Button variant="text" startIcon={<DownloadIcon />} onClick={handleDataDownload} size="small">지금 구절을 엑셀로 받기</Button>
+            </Box>
+          </Box>
+          <Divider />
+          <Box id="backup">
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>백업 받기</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>기기를 바꾸거나 다시 설치할 때 이 파일로 되살립니다.</Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button variant="contained" startIcon={<SaveIcon />} onClick={handleFullBackup} size="small">전체 백업 (녹음 포함)</Button>
+              <Button variant="outlined" startIcon={<DescriptionIcon />} onClick={handleDataOnlyBackup} size="small">구절과 기록만</Button>
+            </Box>
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>백업에서 되살리기</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>지금 이 기기의 구절과 기록은 백업 파일 내용으로 바뀝니다.</Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Button component="label" variant="outlined" startIcon={<RestoreIcon />} size="small">
+                백업파일 선택
+                <FileField type="file" accept=".zip" onChange={handleBackupFileSelect} />
+              </Button>
+              {selectedBackupFile && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{selectedBackupFile.name}</Typography>}
+              {selectedBackupFile && <Button variant="contained" color="warning" onClick={handleFullRestore} disabled={isSaving} size="small">복원하기</Button>}
+            </Box>
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>녹음 옮기기</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>녹음만 따로 묶어 받거나 넣습니다. 녹음 파일 여러 개를 한꺼번에 넣을 수도 있습니다.</Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Button variant="outlined" startIcon={<FolderZipIcon />} size="small" onClick={handleAudioPackExport}>녹음 묶음 받기</Button>
+              <Button component="label" variant="outlined" startIcon={<FolderZipIcon />} size="small">
+                녹음 묶음 고르기
+                <FileField type="file" accept=".zip" onChange={handleAudioPackFileSelect} />
+              </Button>
+              {selectedAudioPackFile && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{selectedAudioPackFile.name}</Typography>}
+              {selectedAudioPackFile && <Button variant="contained" size="small" onClick={handleAudioPackImport}>넣기</Button>}
+              <Button component="label" variant="text" startIcon={<AudioFileIcon />} size="small">
+                녹음 파일 여러 개 넣기
+                <input type="file" hidden multiple accept="audio/*" onChange={handleBulkAudioUpload} />
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      ) : (
       <Paper elevation={0} sx={{ border: '1px solid #e0e0e0', p: 2, mb: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={5}>
@@ -837,13 +944,14 @@ function VerseManager() {
         </Grid>
       </Paper>
 
+      )}
       <Paper elevation={2} sx={{ p: { xs: 1.5, sm: 2, md: 3 }, mb: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}><TextField fullWidth label="전체 검색" variant="outlined" value={filters.searchText} onChange={(e) => handleFilterChange('searchText', e.target.value)} size="small" /></Grid>
           <Grid item xs={12} sm={6}><TextField fullWidth label="태그 검색" variant="outlined" value={filters.tagSearchText} onChange={(e) => handleFilterChange('tagSearchText', e.target.value)} size="small" /></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>카테고리</InputLabel><Select value={filters.selectedCategory} onChange={(e) => handleFilterChange('selectedCategory', e.target.value)} label="카테고리">{categoryList.map(cat => (<MenuItem key={cat} value={cat}>{cat}</MenuItem>))}</Select></FormControl></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>소카테고리</InputLabel><Select value={filters.selectedSubcategory} onChange={(e) => handleFilterChange('selectedSubcategory', e.target.value)} label="소카테고리">{subcategoryList.map(sub => (<MenuItem key={sub} value={sub}>{sub}</MenuItem>))}</Select></FormControl></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>유형 필터</InputLabel><Select value={filters.typeFilter} onChange={(e) => handleFilterChange('typeFilter', e.target.value)} label="유형 필터">{['전체', '미암송', '뉴구절', '최근구절', '오답구절', '즐겨찾기'].map(f => (<MenuItem key={f} value={f}>{f}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>{T.cat}</InputLabel><Select value={filters.selectedCategory} onChange={(e) => handleFilterChange('selectedCategory', e.target.value)} label={T.cat}>{categoryList.map(cat => (<MenuItem key={cat} value={cat}>{cat}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>{T.sub}</InputLabel><Select value={filters.selectedSubcategory} onChange={(e) => handleFilterChange('selectedSubcategory', e.target.value)} label={T.sub}>{subcategoryList.map(sub => (<MenuItem key={sub} value={sub}>{sub}</MenuItem>))}</Select></FormControl></Grid>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>유형 필터</InputLabel><Select value={filters.typeFilter} onChange={(e) => handleFilterChange('typeFilter', e.target.value)} label="유형 필터">{['전체', '미암송', '뉴구절', '최근구절', '오답구절', '즐겨찾기'].map(f => (<MenuItem key={f} value={f}>{typeLabel(f)}</MenuItem>))}</Select></FormControl></Grid>
         </Grid>
       </Paper>
 
@@ -858,7 +966,7 @@ function VerseManager() {
       {viewType === 'list' ? (
         <TableContainer component={Paper} elevation={3}>
           <Table stickyHeader size="small">
-            <TableHead><TableRow sx={{ '& th': { fontWeight: 'bold' } }}><TableCell>제목</TableCell><TableCell>장절</TableCell><TableCell align="center">{IS_LAMP ? '고치기 · 태그 · 지우기' : '관리'}</TableCell></TableRow></TableHead>
+            <TableHead><TableRow sx={{ '& th': { fontWeight: 'bold' } }}>{IS_LAMP ? (<><TableCell>구절</TableCell><TableCell /></>) : (<><TableCell>제목</TableCell><TableCell>장절</TableCell><TableCell align="center">관리</TableCell></>)}</TableRow></TableHead>
             <TableBody>
               {filteredVerses.slice(pagination.page * pagination.rowsPerPage, (pagination.page + 1) * pagination.rowsPerPage).map((v) => (
                 <VerseRow key={v.id} verse={v} onEdit={handleEdit} onDelete={handleDelete} onTagOpen={openTagDialog} listFontSize={listFontSize} />

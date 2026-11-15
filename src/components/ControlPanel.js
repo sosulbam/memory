@@ -1,4 +1,5 @@
 // src/components/ControlPanel.js
+import { T } from '../terms';
 import React from 'react';
 import { IS_LAMP } from '../edition';
 import {
@@ -14,6 +15,7 @@ import {
   Typography,
   ToggleButtonGroup,
   ToggleButton,
+  Checkbox,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { MODES } from '../constants';
@@ -80,17 +82,18 @@ const ControlPanel = ({
             <>
                 <Grid item xs={12}>
                     <FormControl fullWidth size="small">
-                    <InputLabel>카테고리 선택</InputLabel>
+                    <InputLabel>{T.cat} 선택</InputLabel>
                     <Select
                         multiple
                         value={selectedCategories}
                         onChange={handleCategoryChange}
                         renderValue={(selected) => selected.includes('전체') || selected.length === 0 ? '전체' : selected.join(', ')}
-                        label="카테고리 선택"
+                        label={`${T.cat} 선택`}
                         MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                     >
                         {displayedCategories.map((cat) => (
                         <MenuItem key={cat} value={cat} sx={{ fontWeight: selectedCategories.includes(cat) ? 'bold' : 'normal' }}>
+                            {IS_LAMP && <Checkbox size="small" checked={selectedCategories.includes(cat)} sx={{ p: 0.5, mr: 1 }} />}
                             {cat}
                         </MenuItem>
                         ))}
@@ -99,13 +102,13 @@ const ControlPanel = ({
                 </Grid>
                 <Grid item xs={12}>
                     <FormControl fullWidth size="small">
-                    <InputLabel>소카테고리 선택</InputLabel>
+                    <InputLabel>{T.sub} 선택</InputLabel>
                     <Select
                         multiple
                         value={selectedSubcategories}
                         onChange={handleSubcategoryChange}
                         renderValue={(selected) => selected.includes('전체') || selected.length === 0 ? '전체' : selected.join(', ')}
-                        label="소카테고리 선택"
+                        label={`${T.sub} 선택`}
                         MenuProps={{ PaperProps: { style: { maxHeight: 300 } } }}
                     >
                         {displayedSubcategories.map((cat) => (
@@ -132,8 +135,8 @@ const ControlPanel = ({
         {mode === 'turnBasedNew' && (
           <Grid item xs={12}>
             <FormControl size="small" fullWidth>
-                <InputLabel>뉴구절 차수</InputLabel>
-                <Select value={targetTurnForNew} label="뉴구절 차수" onChange={(e) => setTargetTurnForNew(Number(e.target.value))} >
+                <InputLabel>{T.newV} 차수</InputLabel>
+                <Select value={targetTurnForNew} label={`${T.newV} 차수`} onChange={(e) => setTargetTurnForNew(Number(e.target.value))} >
                     {turnMenuItems(turnOptions.new)}
                 </Select>
             </FormControl>
@@ -142,8 +145,8 @@ const ControlPanel = ({
         {mode === 'turnBasedRecent' && (
             <Grid item xs={12}>
             <FormControl size="small" fullWidth>
-                <InputLabel>최근구절 차수</InputLabel>
-                <Select value={targetTurnForRecent} label="최근구절 차수" onChange={(e) => setTargetTurnForRecent(Number(e.target.value))} >
+                <InputLabel>{T.recent} 차수</InputLabel>
+                <Select value={targetTurnForRecent} label={`${T.recent} 차수`} onChange={(e) => setTargetTurnForRecent(Number(e.target.value))} >
                     {turnMenuItems(turnOptions.recent)}
                 </Select>
             </FormControl>
@@ -242,7 +245,7 @@ const ControlPanel = ({
                 </Grid>
                 <Grid item xs={12}>
                   <TextField 
-                    label="목표종료일" 
+                    label={IS_LAMP ? "마감일" : "목표종료일"} 
                     type="date" 
                     size="small" 
                     fullWidth 

@@ -111,7 +111,8 @@ export const useVerseData = () => {
       const { verseIds = null, skipLog = false } = options;
 
       if (type === 'reviewLog') {
-        if (window.confirm('정말로 모든 통계 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        // skipConfirm: 등불판 초기화 창은 자체 확인 단계를 거친 뒤 부른다
+        if (options.skipConfirm || window.confirm('정말로 모든 통계 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
           saveDataToLocal(REVIEW_LOG_KEY, {});
           setReviewLogData({});
           showSnackbar('통계 기록이 초기화되었습니다.', 'success');
@@ -166,6 +167,8 @@ export const useVerseData = () => {
         all_turns_new: [...turnKeys.filter(k => k.includes('New')), '뉴구절복습여부'],
         all_turns_recent: [...turnKeys.filter(k => k.includes('Recent')), '최근구절복습여부'],
         all: [...turnKeys, ...boolKeys],
+        // 등불판 「차수를 1차부터 다시」: 세 가지 차수 기록을 한 번에(따로 세 번 부르면 앞의 결과가 덮인다)
+        all_turns_every: [...turnKeys, '복습여부', '뉴구절복습여부', '최근구절복습여부'],
       };
 
       const keysToReset = resetMap[type];
