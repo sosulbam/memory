@@ -25,11 +25,13 @@ import ReviewLogPage from './pages/ReviewLogPage';
 import RecitationTestPage from './pages/RecitationTestPage';
 import SettingsPage from './pages/SettingsPage';
 import VerseTreePage from './pages/VerseTreePage';
+import PacksPage from './pages/PacksPage';
+import { IS_LAMP, APP_NAME, PUBLIC_URL } from './edition';
 
 import './App.css';
 
 const pageTitles = {
-  '/': '말씀사랑',
+  '/': APP_NAME,
   '/stats': '📊 복습 통계',
   '/list': '📄 전체 구절 보기',
   '/manage': '🛠 구절 관리',
@@ -39,6 +41,7 @@ const pageTitles = {
   '/test': '📝 암송 시험',
   '/settings': '⚙️ 설정',
   '/tree': '🌳 구절 구조 보기',
+  '/packs': '📦 암송 팩',
 };
 
 // AppLayout: 모든 페이지에 공통 UI 적용
@@ -162,7 +165,7 @@ function App() {
       <DataProvider>
         <AppSettingsProvider>
           {/* --- 👇 여기가 수정된 부분입니다 --- */}
-          <Router> {/* basename="/verse" 속성을 제거했습니다. */}
+          <Router basename={PUBLIC_URL || undefined}>
             <Routes>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<HomePage />} />
@@ -175,6 +178,7 @@ function App() {
                 <Route path="/test" element={<RecitationTestPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/tree" element={<VerseTreePage />} />
+                {IS_LAMP && <Route path="/packs" element={<PacksPage />} />}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>

@@ -9,6 +9,8 @@ import { saveDataToLocal } from '../api/localStorageApi';
 import ControlPanel from './ControlPanel';
 
 import HomeIcon from '@mui/icons-material/Home';
+import LibraryAddIcon from '@mui/icons-material/LibraryAdd';
+import { IS_LAMP } from '../edition';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PaletteIcon from '@mui/icons-material/Palette';
 import ExpandLess from '@mui/icons-material/ExpandLess';
@@ -122,6 +124,7 @@ const NavDrawer = ({ open, onClose, settings, setters, onResetDialogOpen }) => {
     { text: '홈', icon: <HomeIcon />, path: '/' },
     { text: '구절 목록', icon: <ViewListIcon />, path: '/list' },
     { text: '구절 구조 보기', icon: <AccountTreeIcon />, path: '/tree' },
+    ...(IS_LAMP ? [{ text: '암송 팩', icon: <LibraryAddIcon />, path: '/packs' }] : []),
     { text: '구절 관리', icon: <ConstructionIcon />, path: '/manage' },
     { text: '태그 관리', icon: <StyleIcon />, path: '/tags' },
     { text: '암송 시험', icon: <AssignmentIcon />, path: '/test' },

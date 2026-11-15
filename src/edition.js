@@ -1,0 +1,7 @@
+// 빌드 판(edition) — 같은 코드로 두 가지를 낸다.
+//  · 기본(Netlify, scripture-memory-sta.netlify.app): 기본 구절 869개가 처음부터 들어 있는 종전 공개판
+//  · lamp(등불 암송, apps.sosulbaram.com/amsong): 빈 상태로 시작, 「암송 팩」에서 골라 넣는다
+// lamp 빌드는 scripts/build-lamp.sh 로만 만든다(REACT_APP_EDITION=lamp, PUBLIC_URL=/amsong).
+export const IS_LAMP = process.env.REACT_APP_EDITION === 'lamp';
+export const APP_NAME = IS_LAMP ? '등불 암송' : '말씀사랑';
+export const PUBLIC_URL = process.env.PUBLIC_URL || '';

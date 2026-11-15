@@ -8,6 +8,7 @@ import {
   REVIEW_LOG_KEY,
 } from '../constants';
 import { getKSTDateString } from '../utils/dateUtils';
+import { IS_LAMP, PUBLIC_URL } from '../edition';
 
 export const useVerseData = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -43,9 +44,10 @@ export const useVerseData = () => {
 
     let finalVerses = Array.isArray(verses) ? verses : [];
     
-    if (finalVerses.length === 0) {
+    // 등불 암송(lamp)은 빈 상태로 시작한다 — 구절은 사용자가 「암송 팩」이나 직접 입력으로 넣는다
+    if (finalVerses.length === 0 && !IS_LAMP) {
       try {
-        const res = await fetch('/data/verses.json'); 
+        const res = await fetch(`${PUBLIC_URL}/data/verses.json`); 
         if (res.ok) {
           const localJson = await res.json();
           finalVerses = localJson.map(v => ({ ...v, id: v.id || `verse-${Math.random().toString(36).substr(2, 9)}` }));

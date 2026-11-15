@@ -1,0 +1,17 @@
+{
+  "short_name": "등불 암송",
+  "name": "등불 암송",
+  "description": "성경 구절을 카드로 외우고 차수로 복습합니다. 기록은 이 기기 안에만 저장됩니다.",
+  "icons": [
+    { "src": "favicon.ico", "sizes": "64x64 48x48 32x32 16x16", "type": "image/x-icon" },
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ],
+  "id": "/amsong/",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "theme_color": "#121211",
+  "background_color": "#ffffff",
+  "lang": "ko"
+}

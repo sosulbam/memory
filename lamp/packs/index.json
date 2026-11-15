@@ -1,0 +1,83 @@
+{
+ "source": "구절 선정: 네비게이토 암송 시리즈",
+ "translation": "개역한글",
+ "packs": [
+  {
+   "id": "assurance5",
+   "name": "5확신",
+   "description": "구원 · 기도응답 · 승리 · 사죄 · 인도의 확신",
+   "count": 5,
+   "groups": 1
+  },
+  {
+   "id": "eight",
+   "name": "8구절",
+   "description": "그리스도 안의 생활부터 후히 드리는 생활까지",
+   "count": 8,
+   "groups": 1
+  },
+  {
+   "id": "tms60",
+   "name": "60구절",
+   "description": "새로운 삶 · 그리스도를 전파함 · 하나님을 의뢰함 · 제자의 자격 · 그리스도를 닮아감",
+   "count": 60,
+   "groups": 5
+  },
+  {
+   "id": "tms180",
+   "name": "180구절",
+   "description": "하나님을 알아감 · 사랑 안에서 · 믿음 안에서 · 승리 안에서 · 그리스도를 증거함, 15묶음",
+   "count": 180,
+   "groups": 15
+  },
+  {
+   "id": "dep242",
+   "name": "DEP 242",
+   "description": "구원의 확신 · 경건의 시간 · 말씀 · 기도 · 교제 · 증거 · 주재권 · 세계비전",
+   "count": 242,
+   "groups": 9
+  },
+  {
+   "id": "promise60",
+   "name": "약속 60구절",
+   "description": "하나님의 약속, 제자의 삶과 사역에 대한 약속, 5묶음",
+   "count": 60,
+   "groups": 5
+  },
+  {
+   "id": "praise60",
+   "name": "찬양 60구절",
+   "description": "찬양하는 이유와 방법, 하나님 A–Z",
+   "count": 62,
+   "groups": 3
+  },
+  {
+   "id": "leadership60",
+   "name": "리더십 60구절",
+   "description": "부르심 · 역할 · 인격 · 기술 · 자라갈 영역",
+   "count": 66,
+   "groups": 5
+  },
+  {
+   "id": "evangelism60",
+   "name": "전도 60구절",
+   "description": "전도의 중요성과 방법 · 인간의 상태 · 복음의 핵심 · 반대 질문",
+   "count": 66,
+   "groups": 5
+  },
+  {
+   "id": "training60",
+   "name": "훈련 60구절",
+   "description": "훈련의 중요성과 영역 · 훈련하는 자와 받는 자",
+   "count": 60,
+   "groups": 5
+  },
+  {
+   "id": "character60",
+   "name": "인격 60구절",
+   "description": "무엇을 · 왜 · 어떻게 · 어느 영역에서",
+   "count": 60,
+   "groups": 5
+  }
+ ]
+}

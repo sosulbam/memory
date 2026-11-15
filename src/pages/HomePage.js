@@ -12,6 +12,8 @@ import ReviewSession from '../components/ReviewSession';
 import TagDialog from '../components/TagDialog';
 import { THEMES } from '../constants';
 import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
+import { Link as RouterLink } from 'react-router-dom';
+import { IS_LAMP } from '../edition';
 
 const HomePage = () => {
   const { isLoading, originalVerses, tagsData, updateTags, updateVerseStatus, turnScheduleData, reviewLogData, resetReviewStatus, loadData } = useContext(DataContext);
@@ -156,6 +158,24 @@ const HomePage = () => {
 
   if (isLoading || !settingsLoaded) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><Typography>로딩 중...</Typography></Box>;
+  }
+
+  // 등불 암송은 빈 상태로 시작한다 — 첫 화면에서 구절 넣는 길을 보여 준다
+  if (IS_LAMP && (!originalVerses || originalVerses.length === 0)) {
+    return (
+      <Container maxWidth="sm" sx={{ p: { xs: 2, sm: 3 }, pt: { xs: 5, sm: 8 }, pb: 'calc(24px + var(--sab))' }}>
+        <Typography sx={{ fontFamily: "'Nanum Myeongjo', serif", fontSize: 24, fontWeight: 700, lineHeight: 1.5 }}>
+          외울 구절을 넣어 시작하세요
+        </Typography>
+        <Typography color="text.secondary" sx={{ mt: 1.5, mb: 4 }}>
+          오래 써 온 암송 시리즈를 팩째 넣거나, 내가 외우는 구절을 직접 넣을 수 있습니다. 기록은 이 기기 안에만 저장됩니다.
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Button component={RouterLink} to="/packs" variant="contained" size="large">암송 팩에서 고르기</Button>
+          <Button component={RouterLink} to="/manage" variant="outlined" size="large">직접 넣기 · 엑셀 · 백업 복원</Button>
+        </Box>
+      </Container>
+    );
   }
 
   return (
