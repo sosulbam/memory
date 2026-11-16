@@ -71,9 +71,9 @@ const FocusModeHeader = ({ setIsFocusMode, sessionStats, versesCount, isBrowsing
                 <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 2 }, alignItems: 'center', textAlign: 'center', overflow: 'hidden' }}>
                     {isBrowsingCompleted ? (<Box sx={{ width: '120px' }} />) : (
                         <>
-                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>총남은: {versesCount}</Typography>
-                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>오늘남은: {remainingToday}</Typography>}
-                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>오늘완료: {currentCompleted}</Typography>
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{IS_LAMP ? '총 남은' : '총남은'}: {versesCount}</Typography>
+                            {remainingToday !== null && <Typography variant="body2" sx={{ color: '#ffeb3b', fontWeight: 'bold', whiteSpace: 'nowrap' }}>{IS_LAMP ? '오늘 남은' : '오늘남은'}: {remainingToday}</Typography>}
+                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>{IS_LAMP ? '오늘 완료' : '오늘완료'}: {currentCompleted}</Typography>
                         </>
                     )}
                 </Box>

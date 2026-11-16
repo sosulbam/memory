@@ -168,7 +168,7 @@ const ReviewDashboard = ({
     return (
         <Box sx={{ height: 'calc(100vh - 57px - var(--sat))', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <Box sx={{ maxWidth: 'sm', mx: 'auto', width: '100%', pt: 1, pb: 1, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 3, display: 'flex', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: '22vh', height: '100%', }}>
+                <Card sx={{ mb: 1.5, flexShrink: 0, borderRadius: 3, display: 'flex', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', backgroundImage: favoriteVerse ? THEMES[themeKey] : 'none', color: 'white', transition: 'all 0.5s ease-in-out', maxHeight: IS_LAMP ? 'max(22vh, 168px)' : '22vh', height: '100%', }}>
                     {favoriteVerse && (
                         <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', p: 2, overflow: 'hidden' }}>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center', opacity: 0.9, mb: 1, flexShrink: 0 }}>{favoriteVerse.장절}</Typography>

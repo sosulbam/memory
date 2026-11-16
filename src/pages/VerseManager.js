@@ -833,11 +833,11 @@ function VerseManager() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>지금 이 기기의 구절과 기록은 백업 파일 내용으로 바뀝니다.</Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               <Button component="label" variant="outlined" startIcon={<RestoreIcon />} size="small">
-                백업파일 선택
+                백업 파일 선택
                 <FileField type="file" accept=".zip" onChange={handleBackupFileSelect} />
               </Button>
               {selectedBackupFile && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{selectedBackupFile.name}</Typography>}
-              {selectedBackupFile && <Button variant="contained" color="warning" onClick={handleFullRestore} disabled={isSaving} size="small">복원하기</Button>}
+              {selectedBackupFile && <Button variant="contained" color="warning" onClick={handleFullRestore} disabled={isSaving} size="small">되살리기</Button>}
             </Box>
           </Box>
           <Box>
