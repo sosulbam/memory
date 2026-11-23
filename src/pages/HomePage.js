@@ -12,6 +12,8 @@ import { getKSTDateString } from '../utils/dateUtils';
 import ReviewDashboard from '../components/ReviewDashboard';
 import ReviewSession from '../components/ReviewSession';
 import TagDialog from '../components/TagDialog';
+import ShareTodayDialog from '../components/ShareTodayDialog';
+import { getTodayReviewed } from '../utils/shareToday';
 import { THEMES } from '../constants';
 import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
 import { Link as RouterLink, useOutletContext } from 'react-router-dom';
@@ -86,6 +88,8 @@ const HomePage = () => {
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState({ open: false, mode: null, turn: 0 });
+  const [shareOpen, setShareOpen] = useState(false);
+  const todayReviewedCount = useMemo(() => getTodayReviewed(originalVerses).length, [originalVerses]);
   const outlet = useOutletContext() || {};
   // 등불판 「일정 정하기」: 날짜 두 칸과 저장만 있는 작은 창(N4)
   const [scheduleDraft, setScheduleDraft] = useState(null);
@@ -240,6 +244,8 @@ const HomePage = () => {
             hasSchedule={hasSchedule}
             schedule={turnScheduleData && turnScheduleData[targetTurn]}
             onOpenSchedule={openSchedule}
+            todayReviewedCount={todayReviewedCount}
+            onShareToday={() => setShareOpen(true)}
           />
           <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Container>
@@ -279,13 +285,16 @@ const HomePage = () => {
             </>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+          <Button onClick={() => setShareOpen(true)} sx={{ mr: 'auto' }}>오늘 복습 보내기</Button>
           <Button onClick={handleCancelReset}>나중에</Button>
           <Button onClick={handleConfirmReset} variant="contained">
             {resetConfirm.mode === 'category' ? '다시 시작' : `${resetConfirm.turn + 1}차 시작`}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ShareTodayDialog open={shareOpen} onClose={() => setShareOpen(false)} verses={originalVerses} />
     </>
   );
 };

@@ -35,6 +35,9 @@ import { buildReviewUpdates, writeReviewLog, advanceToNextTurn, TURN_MODE_META }
 import { calculateDaysAgoText } from '../utils/dateUtils';
 import ActionBar from '../components/ActionBar';
 import TagDialog from '../components/TagDialog';
+import ShareTodayDialog from '../components/ShareTodayDialog';
+import { getTodayReviewed } from '../utils/shareToday';
+import SendIcon from '@mui/icons-material/Send';
 import { loadDataFromLocal, saveDataToLocal } from '../api/localStorageApi';
 import { VERSETREE_PREFS_KEY } from '../constants';
 
@@ -186,6 +189,10 @@ const VerseTreePage = () => {
 
   // 태그 편집 다이얼로그 대상 구절 (공개판은 페이지 단위 1개)
   const [tagVerse, setTagVerse] = useState(null);
+
+  // 오늘 복습 보내기(#342)
+  const [shareOpen, setShareOpen] = useState(false);
+  const todayReviewedCount = useMemo(() => getTodayReviewed(originalVerses).length, [originalVerses]);
 
   // 저장된 트리 복습 설정 불러오기 (완료 표시 방식·분량·모드 유지)
   const savedPrefs = useMemo(() => loadDataFromLocal(VERSETREE_PREFS_KEY) || {}, []);
@@ -544,15 +551,28 @@ const VerseTreePage = () => {
             <><b>{tree.length}</b>개 시리즈 · 총 <b>{totalVerses}</b>구절</>
           )}
         </Typography>
-        <Button
-          size="small"
-          variant={reviewMode ? 'contained' : 'outlined'}
-          color="primary"
-          startIcon={reviewMode ? <CheckCircleIcon /> : <SchoolIcon />}
-          onClick={toggleReviewMode}
-        >
-          {reviewMode ? '복습 모드 끄기' : '복습 모드'}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          {reviewMode && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<SendIcon />}
+              onClick={() => setShareOpen(true)}
+              disabled={todayReviewedCount === 0}
+            >
+              보내기{todayReviewedCount > 0 ? ` ${todayReviewedCount}` : ''}
+            </Button>
+          )}
+          <Button
+            size="small"
+            variant={reviewMode ? 'contained' : 'outlined'}
+            color="primary"
+            startIcon={reviewMode ? <CheckCircleIcon /> : <SchoolIcon />}
+            onClick={toggleReviewMode}
+          >
+            {reviewMode ? '복습 모드 끄기' : '복습 모드'}
+          </Button>
+        </Stack>
       </Stack>
 
       {/* 복습 모드일 때: 차수별 모드 선택 (복습구절 / 뉴구절 / 최근구절) */}
@@ -890,6 +910,7 @@ const VerseTreePage = () => {
         tags={tagsData}
         onSaveTags={updateTags}
       />
+      <ShareTodayDialog open={shareOpen} onClose={() => setShareOpen(false)} verses={originalVerses} />
     </Container>
   );
 };

@@ -9,6 +9,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import SendIcon from '@mui/icons-material/Send';
 import { THEMES, MODES } from '../constants';
 import { IS_LAMP, LAMP_LOOK } from '../edition';
 
@@ -78,7 +79,7 @@ const LAMP_EMPTY_HINT = {
 
 const ReviewDashboard = ({
     settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn,
-    modePoolCount, hasSchedule, onOpenSchedule, schedule,
+    modePoolCount, hasSchedule, onOpenSchedule, schedule, todayReviewedCount = 0, onShareToday,
 }) => {
     const { fontType, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
 
@@ -106,6 +107,13 @@ const ReviewDashboard = ({
         if (fontType === 'batang') return { ...baseStyle, fontFamily: "'Gowun Batang', serif" };
         return { ...baseStyle, fontFamily: "sans-serif" };
     }, [fontType]);
+
+    // 오늘 복습한 구절을 암송짝에게 보내기(#342)
+    const shareButton = onShareToday && (
+        <Button variant="text" startIcon={<SendIcon />} onClick={onShareToday} disabled={todayReviewedCount === 0} sx={{ mt: 1, width: '100%' }}>
+            {todayReviewedCount > 0 ? `오늘 복습 보내기 · ${todayReviewedCount}구절` : '오늘 복습 보내기 (복습한 구절이 아직 없습니다)'}
+        </Button>
+    );
 
     if (LAMP_LOOK) {
         return (
@@ -160,6 +168,7 @@ const ReviewDashboard = ({
                             {currentTurn}차를 마쳤습니다 · {currentTurn + 1}차 시작하기
                         </Button>
                     )}
+                    {shareButton}
                 </Paper>
             </Box>
         );
@@ -243,6 +252,7 @@ const ReviewDashboard = ({
                                 {currentTurn}차 완주 · {currentTurn + 1}차 시작하기
                             </Button>
                         )}
+                        {shareButton}
                     </Paper>
                 </Box>
             </Box>
