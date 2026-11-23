@@ -12,7 +12,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ShareIcon from '@mui/icons-material/Share';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useSnackbar } from '../contexts/SnackbarContext';
-import { SHARE_PREFS_KEY, getTodayReviewed, groupByCategory, buildShareText, copyText } from '../utils/shareToday';
+import { T } from '../terms';
+import { SHARE_PREFS_KEY, getTodayReviewed, groupByCategory, buildShareText, copyText, verseMarks } from '../utils/shareToday';
 
 const loadPrefs = () => {
   try { return JSON.parse(localStorage.getItem(SHARE_PREFS_KEY)) || {}; } catch (e) { return {}; }
@@ -152,7 +153,12 @@ const ShareTodayDialog = ({ open, onClose, verses }) => {
                         <Box key={v.id} sx={{ display: 'flex', alignItems: 'flex-start' }}>
                           <Checkbox size="small" checked={selected.has(v.id)} onChange={(e) => toggleIds([v.id], e.target.checked)} inputProps={{ 'aria-label': v.장절 }} />
                           <Box sx={{ minWidth: 0, flex: 1, py: 0.75, cursor: 'pointer' }} onClick={() => toggleIds([v.id], !selected.has(v.id))}>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{v.장절}</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {v.장절}
+                              {verseMarks(v).map(m => (
+                                <Box key={m} component="span" sx={{ ml: 0.75, px: 0.6, py: '1px', borderRadius: 1, fontSize: '0.7rem', fontWeight: 600, verticalAlign: 'middle', color: m === T.recentShort ? 'secondary.main' : 'primary.main', border: '1px solid', borderColor: 'currentColor' }}>{m}</Box>
+                              ))}
+                            </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.본문}</Typography>
                           </Box>
                         </Box>

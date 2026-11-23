@@ -3,6 +3,7 @@
 // ⚠️ 오늘 복습한 구절은 구절의 복습날짜("YYYY. M. D", 로컬)로 찾는다.
 //    REVIEW_LOG(키 YYYY-MM-DD)는 모드별 개수만 들고 있어 어느 구절인지 모른다.
 import { getReviewDateStr } from './reviewScope';
+import { T } from '../terms';
 
 export const SHARE_PREFS_KEY = 'recitation-app-share-prefs';
 
@@ -26,6 +27,10 @@ export const groupByCategory = (verses) => {
   return groups;
 };
 
+// 뉴구절·최근구절 표시(#349) — 보내는 글·고르는 목록 공통. 기본판 「뉴」, 등불판 「새」
+export const verseMarks = (v) => [v.뉴구절여부 && T.newShort, v.최근구절여부 && T.recentShort].filter(Boolean);
+const marksText = (v) => verseMarks(v).map(m => ` [${m}]`).join('');
+
 const todayMD = () => { const n = new Date(); return `${n.getMonth() + 1}/${n.getDate()}`; };
 
 // format: 'full' = 장절 + 본문 / 'ref' = 장절만(확인용 본문은 아래에 따로)
@@ -36,7 +41,12 @@ export const buildShareText = (groups, selectedIds, { format = 'full', withTitle
   const total = picked.reduce((s, g) => s + g.verses.length, 0);
   if (!total) return '';
 
-  const head = `${todayMD()} 오늘 복습 ${total}구절 (${picked.map(g => `${g.name} ${g.verses.length}`).join(' · ')})`;
+  const all = picked.flatMap(g => g.verses);
+  const markCounts = [
+    [T.newShort, all.filter(v => v.뉴구절여부).length],
+    [T.recentShort, all.filter(v => v.최근구절여부).length],
+  ].filter(([, c]) => c).map(([m, c]) => ` · ${m} ${c}`).join('');
+  const head = `${todayMD()} 오늘 복습 ${total}구절 (${picked.map(g => `${g.name} ${g.verses.length}`).join(' · ')})${markCounts}`;
   const titleOf = v => (withTitle && v.제목 ? ` ${v.제목}` : '');
   const lines = [head];
   let n = 0;
@@ -48,9 +58,9 @@ export const buildShareText = (groups, selectedIds, { format = 'full', withTitle
       n += 1;
       numbered.push({ n, v });
       if (format === 'ref') {
-        lines.push(`${n}. ${v.장절}${titleOf(v)}`);
+        lines.push(`${n}. ${v.장절}${marksText(v)}${titleOf(v)}`);
       } else {
-        lines.push(`${n}. ${v.장절}${titleOf(v)}`, v.본문 || '', '');
+        lines.push(`${n}. ${v.장절}${marksText(v)}${titleOf(v)}`, v.본문 || '', '');
       }
     });
     if (format !== 'ref') lines.pop(); // 묶음 끝 빈 줄은 다음 머리 앞 빈 줄과 겹친다
@@ -58,7 +68,7 @@ export const buildShareText = (groups, selectedIds, { format = 'full', withTitle
 
   if (format === 'ref') {
     lines.push('', '', '── 확인용 본문 ──');
-    numbered.forEach(({ n: k, v }) => lines.push('', `${k}. ${v.장절}`, v.본문 || ''));
+    numbered.forEach(({ n: k, v }) => lines.push('', `${k}. ${v.장절}${marksText(v)}`, v.본문 || ''));
   }
   return lines.join('\n').trim();
 };
