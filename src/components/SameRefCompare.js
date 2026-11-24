@@ -2,14 +2,17 @@
 // 같은 장절 모아 보기 (#354, 2026-11-24 부장님) — 정규구절 안에 장절이 같은 구절이 또 있으면 복습 카드 아래에 안내 + [비교하기].
 // 누르면 그 장절의 구절들을 시리즈 순(5→8→60→180→DEP)으로 모아 제목을 비교한다. 보기만 — 복습 기록·차수·통계는 건드리지 않는다.
 import React from 'react';
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, Chip, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, DialogActions, useMediaQuery, useTheme } from '@mui/material';
 import { formatRefFull } from '../utils/refFormat';
-import { bodiesDiffer, seriesLabel } from '../utils/sameRef';
+import { bodiesDiffer } from '../utils/sameRef';
 
-// 「SM::2. DEP 242::1. Assurance of Salvation」 → 「1. Assurance of Salvation」
+// 카테고리는 데이터 이름 그대로(줄이지 않음, 뒤 공백만 trim)
+const catName = (v) => String(v.카테고리 || '').trim();
+// 중제목 = 소카테고리 전체. 영어판의 「SM::2. DEP 242::1. Assurance of Salvation」은 앞 경로를 뗀 「1. Assurance of Salvation」.
+// 카테고리와 같으면(8구절 › 8구절) 한 번만
 const subLabel = (v) => {
   const sub = String(v.소카테고리 || '').split('::').pop().trim();
-  return sub && sub !== String(v.카테고리 || '').trim() ? sub : '';
+  return sub && sub !== catName(v) ? sub : '';
 };
 
 // 카드 아래 안내 줄 — 카드 탭(정답 보기)·타이핑 진행으로 번지지 않게 클릭 전파를 막는다
@@ -77,12 +80,15 @@ export const SameRefDialog = ({ open, onClose, group, currentId, disableRestoreF
                   bgcolor: isCurrent ? 'action.selected' : 'transparent', borderLeftWidth: isCurrent ? 4 : 1,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap', mb: 0.5 }}>
-                  <Chip label={seriesLabel(v)} size="small" color="primary" variant={isCurrent ? 'filled' : 'outlined'} />
-                  {sub && <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'keep-all' }}>{sub}</Typography>}
-                  {isCurrent && <Typography variant="caption" color="primary" sx={{ fontWeight: 700, ml: 'auto' }}>지금 복습 중</Typography>}
+                {/* 1줄: 카테고리 › 중제목(소카테고리) — 줄이지 않고 줄바꿈 / 2줄: 제목 (11/24 부장님 「카테고리 - 중제목 - 제목 모두다」) */}
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                  <Typography data-same-ref-path sx={{ flex: 1, minWidth: 0, fontSize: '0.9rem', fontWeight: 600, lineHeight: 1.45, color: isCurrent ? 'primary.main' : 'text.primary', wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>
+                    {catName(v)}
+                    {sub && <><Box component="span" sx={{ opacity: 0.6 }}>{' › '}</Box>{sub}</>}
+                  </Typography>
+                  {isCurrent && <Typography variant="caption" color="primary" sx={{ fontWeight: 700, flexShrink: 0, lineHeight: 1.9 }}>지금 복습 중</Typography>}
                 </Box>
-                <Typography sx={{ fontWeight: 700, wordBreak: 'keep-all' }}>{v.제목 || '(제목 없음)'}</Typography>
+                <Typography data-same-ref-title sx={{ mt: 0.25, fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.45, wordBreak: 'keep-all', overflowWrap: 'anywhere' }}>{v.제목 || '(제목 없음)'}</Typography>
                 {differ && <Box sx={{ mt: 0.75 }}><Body text={v.본문} /></Box>}
               </Box>
             );

@@ -14,9 +14,6 @@ const catOf = (v) => String(v?.카테고리 || '').trim();
 export const isRegularVerse = (v) => SERIES_RANK[catOf(v)] !== undefined;
 const seriesRank = (v) => SERIES_RANK[catOf(v)] ?? 9;
 
-// 비교 창에 보일 시리즈 이름 — 「DEP 8package」는 DEP 로 줄인다
-export const seriesLabel = (v) => (catOf(v) === 'DEP 8package' ? 'DEP' : catOf(v));
-
 export const normRef = (ref) => String(ref || '').replace(/\s+/g, '');
 
 const byRank = (a, b) => seriesRank(a) - seriesRank(b) || (Number(a.번호) || 0) - (Number(b.번호) || 0);
