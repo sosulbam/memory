@@ -2,7 +2,7 @@
 import { IS_LAMP, LAMP_LOOK, LAMP_VERSION } from '../edition';
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider
+  Box, Typography, ToggleButtonGroup, ToggleButton, Paper, Slider, Button, Divider, FormControlLabel, Switch
 } from '@mui/material';
 import TextDecreaseIcon from '@mui/icons-material/TextDecrease';
 import TextIncreaseIcon from '@mui/icons-material/TextIncrease';
@@ -45,8 +45,8 @@ const LIST_SIZE_MAP    = { small: '0.85rem', medium: '1rem',    large: '1.2rem' 
 const SettingsPage = () => {
   const [showDiag, setShowDiag] = React.useState(false);
   const { settings, setters } = useAppSettings();
-  const { fontSize, listFontSize, fontType, themeKey } = settings;
-  const { setFontSize, setListFontSize, setFontType, setThemeKey } = setters;
+  const { fontSize, listFontSize, fontType, themeKey, dailyNewRecentReset } = settings;
+  const { setFontSize, setListFontSize, setFontType, setThemeKey, setDailyNewRecentReset } = setters;
   const { showSnackbar } = useSnackbar();
   const [safeArea, setSafeArea] = useState(loadSafeArea);
   const [diag, setDiag] = useState(null);
@@ -199,6 +199,20 @@ const SettingsPage = () => {
           ))}
         </Box>
       </Paper>
+      {/* 날이 바뀌면 뉴·최근 복습 표시 새로 시작 (#351) */}
+      <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+        <SectionTitle>복습</SectionTitle>
+        <FormControlLabel
+          sx={{ ml: 0, mr: 0, width: '100%', justifyContent: 'space-between', gap: 1 }}
+          labelPlacement="start"
+          control={<Switch checked={dailyNewRecentReset !== false} onChange={(e) => setDailyNewRecentReset(e.target.checked)} />}
+          label={<Typography variant="body2" sx={{ fontWeight: 'bold', wordBreak: 'keep-all' }}>{IS_LAMP ? '날이 바뀌면 새 구절·최근 구절 복습 표시 새로 시작' : '날이 바뀌면 뉴·최근 복습 표시 새로 시작'}</Typography>}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, wordBreak: 'keep-all' }}>
+          {IS_LAMP ? '새 구절·최근 구절' : '뉴구절·최근구절'}은 날마다 하는 복습이라, 다음 날 처음 열 때 어제 한 표시를 지웁니다. 복습 기록·통계·차수는 그대로입니다.
+        </Typography>
+      </Paper>
+
       {/* 화면 위아래 여백 — 폰 상태바·하단 버튼 줄에 앱이 가려질 때 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <SectionTitle>화면 위아래 여백</SectionTitle>

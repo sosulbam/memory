@@ -9,6 +9,7 @@ import { SnackbarProvider, useSnackbar } from './contexts/SnackbarContext';
 import { DataProvider, DataContext } from './contexts/DataContext';
 import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import { useAppSettings } from './hooks/useAppSettings';
+import { useDailyNewRecentReset } from './hooks/useDailyNewRecentReset';
 
 // Components
 import NavDrawer from './components/NavDrawer';
@@ -65,6 +66,7 @@ const AppLayout = () => {
   const { settings, setters } = useAppSettings();
   const { resetReviewStatus } = useContext(DataContext);
   const { showSnackbar } = useSnackbar();
+  useDailyNewRecentReset();
 
   // 새 버전 감지
   useEffect(() => {

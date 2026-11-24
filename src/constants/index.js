@@ -43,6 +43,8 @@ export const THEME_PREFERENCE_KEY = 'recitation-app-theme';
 export const LAST_APP_STATE_KEY = 'recitation-app-last-app-state';
 export const VERSELIST_STATE_KEY = 'recitation-app-verselist-state';
 export const VERSETREE_PREFS_KEY = 'recitation-app-versetree-prefs';
+// 날이 바뀌면 뉴·최근 표시 초기화 — 마지막으로 확인한 날짜 { date: 'YYYY. M. D' } (#351)
+export const DAILY_RESET_KEY = 'recitation-app-daily-reset';
 
 // 등불판 테마: 그라데이션 대신 한 가지 색(사이트 톤). 키는 기본판과 같게 둬 저장된 값이 그대로 통한다
 const flat = (c) => `linear-gradient(${c}, ${c})`;

@@ -30,6 +30,8 @@ export const AppSettingsProvider = ({ children }) => {
 
   // --- [신규] 오디오 우선순위 설정 ('recording' | 'tts') ---
   const [audioPriority, setAudioPriority] = useState('recording');
+  // 날이 바뀌면 뉴·최근 복습 표시 새로 시작 (#351, 기본 켬)
+  const [dailyNewRecentReset, setDailyNewRecentReset] = useState(true);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -56,6 +58,7 @@ export const AppSettingsProvider = ({ children }) => {
         setSpeechRate(lastAppState.speechRate || 1.0);
         setTtsInterval(lastAppState.ttsInterval || 0);
         setAudioPriority(lastAppState.audioPriority || 'recording'); // 로드
+        setDailyNewRecentReset(lastAppState.dailyNewRecentReset !== false);
       }
       const savedTheme = loadDataFromLocal(THEME_PREFERENCE_KEY);
       if (savedTheme && THEMES[savedTheme.theme]) setThemeKey(savedTheme.theme);
@@ -72,11 +75,12 @@ export const AppSettingsProvider = ({ children }) => {
       mode, order, selectedCategories, selectedSubcategories,
       targetTurn, targetTurnForNew, targetTurnForRecent,
       reviewView, cardStyle, isFocusMode, fontSize, listFontSize, completedSortOrder,
-      fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority // 저장
+      fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, // 저장
+      dailyNewRecentReset,
     };
     saveDataToLocal(LAST_APP_STATE_KEY, appStateToSave);
     saveDataToLocal(THEME_PREFERENCE_KEY, { theme: themeKey });
-  }, [mode, order, selectedCategories, selectedSubcategories, targetTurn, targetTurnForNew, targetTurnForRecent, reviewView, cardStyle, isFocusMode, fontSize, listFontSize, completedSortOrder, themeKey, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, isLoaded]);
+  }, [mode, order, selectedCategories, selectedSubcategories, targetTurn, targetTurnForNew, targetTurnForRecent, reviewView, cardStyle, isFocusMode, fontSize, listFontSize, completedSortOrder, themeKey, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, dailyNewRecentReset, isLoaded]);
 
   const handleCategoryChange = (event) => {
     const { target: { value } } = event;
@@ -99,13 +103,15 @@ export const AppSettingsProvider = ({ children }) => {
       mode, order, selectedCategories, selectedSubcategories,
       targetTurn, targetTurnForNew, targetTurnForRecent,
       reviewView, cardStyle, themeKey, isFocusMode, fontSize, listFontSize, completedSortOrder,
-      fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority // 제공
+      fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, // 제공
+      dailyNewRecentReset,
     },
     setters: {
       setMode, setOrder, setSelectedCategories, handleCategoryChange,
       setSelectedSubcategories, handleSubcategoryChange,
       setTargetTurn, setTargetTurnForNew, setTargetTurnForRecent, setReviewView, setCardStyle, setThemeKey, setIsFocusMode, setFontSize, setListFontSize, setCompletedSortOrder,
-      setFontType, setTtsOrder, setVoiceURI, setSpeechRate, setTtsInterval, setAudioPriority // 설정 함수
+      setFontType, setTtsOrder, setVoiceURI, setSpeechRate, setTtsInterval, setAudioPriority, // 설정 함수
+      setDailyNewRecentReset,
     },
   };
 

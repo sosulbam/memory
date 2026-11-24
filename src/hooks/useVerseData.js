@@ -169,6 +169,8 @@ export const useVerseData = () => {
         all: [...turnKeys, ...boolKeys],
         // 등불판 「차수를 1차부터 다시」: 세 가지 차수 기록을 한 번에(따로 세 번 부르면 앞의 결과가 덮인다)
         all_turns_every: [...turnKeys, '복습여부', '뉴구절복습여부', '최근구절복습여부'],
+        // 날이 바뀌면 뉴·최근 「했음」 표시만(useDailyNewRecentReset, #351) — 두 번 따로 부르면 앞의 결과가 덮인다
+        daily_new_recent: ['뉴구절복습여부', '최근구절복습여부'],
       };
 
       const keysToReset = resetMap[type];
