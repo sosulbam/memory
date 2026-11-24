@@ -62,7 +62,7 @@ export const PaperFront = ({ verse, fontSize }) => (
 );
 
 // 뒷면: 제목 · 본문 · (아래) 카테고리 · 장절
-export const PaperBack = ({ verse, fontSize }) => {
+export const PaperBack = ({ verse, fontSize, compact = false }) => {
   const sub = verse.소카테고리 && verse.소카테고리 !== verse.카테고리 ? `${verse.카테고리} · ${verse.소카테고리}` : verse.카테고리;
   // 등불판: 본문이 카드 안에서 넘치면 「아래로 밀어 더 보기」를 보여 준다(가로 화면 긴 구절, N2)
   const bodyRef = useRef(null);
@@ -87,7 +87,8 @@ export const PaperBack = ({ verse, fontSize }) => {
           fontFamily: CARD_FONT, fontWeight: 400, color: INK, lineHeight: 1.75, textIndent: '1em',
           whiteSpace: 'pre-line', wordBreak: 'keep-all', flex: 1,
           // 긴 구절은 카드 안에서 스크롤 — 카드 아래 음성 버튼 줄이 「상태 변경」과 겹치지 않는 높이
-          maxHeight: '38vh', overflowY: 'auto',
+          // 카드 아래 「같은 장절」 안내 줄이 있으면(compact) 그만큼 덜 쓴다 (#354)
+          maxHeight: compact ? 'max(110px, calc(38vh - 64px))' : '38vh', overflowY: 'auto',
           fontSize: BODY_SIZE[fontSize] || BODY_SIZE.medium,
         }}>
           {verse.본문}

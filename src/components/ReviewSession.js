@@ -1,5 +1,5 @@
 // src/components/ReviewSession.js
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useContext, useMemo } from 'react';
 import { Box, Backdrop, Slide, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, List, ListItem, ListItemIcon, ListItemText, Chip } from '@mui/material';
 import { useSwipeable } from 'react-swipeable';
 import VerseCard from './VerseCard';
@@ -8,6 +8,9 @@ import ActionBar from './ActionBar';
 import TagDialog from './TagDialog';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { IS_LAMP } from '../edition';
+import { SameRefDialog } from './SameRefCompare';
+import { DataContext } from '../contexts/DataContext';
+import { buildSameRefIndex, sameRefGroupOf } from '../utils/sameRef';
 
 const LampHelpDialog = ({ open, onClose }) => (
     <Dialog open={open} onClose={onClose} scroll="paper">
@@ -19,6 +22,7 @@ const LampHelpDialog = ({ open, onClose }) => (
                 <ListItem><ListItemText primary="다시" secondary="완료로 기록하지 않고 이 구절을 맨 뒤로 보냅니다. 나중에 다시 나옵니다." /></ListItem>
                 <ListItem><ListItemText primary="오른쪽으로 밀기" secondary="방금 완료한 구절을 다시 봅니다(기록은 바뀌지 않습니다)." /></ListItem>
                 <ListItem><ListItemText primary="상태" secondary="새 구절·오답·최근·즐겨찾기·미암송을 켜고 끄고, 태그를 붙이고, 구절을 복사합니다. 채운 단추가 켜진 상태입니다. 카드를 위로 밀어도 열립니다." /></ListItem>
+                <ListItem><ListItemText primary="같은 장절 비교" secondary="같은 장절이 다른 시리즈에도 있으면 카드 아래에 안내가 나옵니다. [비교하기]를 누르면 시리즈마다 다른 제목을 모아 봅니다." /></ListItem>
                 <ListItem><ListItemText primary="연속 재생" secondary="구절을 차례로 읽어 줍니다. 듣기만 하므로 완료로 기록하지 않습니다." /></ListItem>
                 <ListItem><ListItemText primary="완료 보기" secondary="이번 차수에서 이미 완료한 구절을 넘겨 봅니다." /></ListItem>
                 <ListItem><ListItemText primary="PC 단축키" secondary="Space 뒤집기 · Enter 외웠어요 · ← 방금 완료한 구절 · → 돌아오기" /></ListItem>
@@ -87,6 +91,18 @@ const ReviewSession = ({
     const { toggleAnswer, handleMarkAsReviewed, browseNext, browsePrev, toggleBrowseMode, peekPrev, peekNext, exitPeek } = actions;
     const [isActionBarVisible, setIsActionBarVisible] = useState(false);
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+
+    // 같은 장절 모아 보기 (#354) — 정규구절 안에서 장절이 같은 구절 묶음. 보기만 하고 복습 상태는 건드리지 않는다
+    const { originalVerses } = useContext(DataContext) || {};
+    const sameRefIndex = useMemo(() => buildSameRefIndex(originalVerses), [originalVerses]);
+    const sameRefGroup = sameRefGroupOf(sameRefIndex, verse);
+    const [isCompareOpen, setIsCompareOpen] = useState(false);
+    useEffect(() => { setIsCompareOpen(false); }, [verse?.id]);
+    const handleCompareOpen = useCallback(() => {
+        setIsAutoPlaying(false); // 비교하는 동안 듣기가 끝나 다음 구절로 넘어가지 않게
+        window.speechSynthesis?.cancel();
+        setIsCompareOpen(true);
+    }, []);
     // 등불판: 복습 화면을 열 때는 늘 앞면부터(답이 먼저 보이지 않게, R6)
     useEffect(() => { if (IS_LAMP && showAnswer) toggleAnswer(); // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -154,7 +170,7 @@ const ReviewSession = ({
     // ref로 최신 상태를 유지 (popstate 핸들러가 재등록되지 않도록)
     const backHandlerRef = useRef(null);
     useEffect(() => {
-        backHandlerRef.current = { isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode: setters.setIsFocusMode };
+        backHandlerRef.current = { isCompareOpen, isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode: setters.setIsFocusMode };
     });
 
     useEffect(() => {
@@ -162,8 +178,10 @@ const ReviewSession = ({
         window.history.pushState({ reviewSession: true }, '');
 
         const handlePopState = () => {
-            const { isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode } = backHandlerRef.current;
-            if (isActionBarVisible) {
+            const { isCompareOpen, isActionBarVisible, isPeeking, isBrowsingCompleted, exitPeek, toggleBrowseMode, setIsFocusMode } = backHandlerRef.current;
+            if (isCompareOpen) {
+                setIsCompareOpen(false); // 비교 창이 열려 있으면 뒤로가기는 창만 닫는다
+            } else if (isActionBarVisible) {
                 setIsActionBarVisible(false);
             } else if (isPeeking) {
                 exitPeek();
@@ -190,7 +208,7 @@ const ReviewSession = ({
             // 등불판: 상태 시트는 Esc 로 닫힌다(N7)
             if (IS_LAMP && e.key === 'Escape' && isActionBarVisible) { setIsActionBarVisible(false); return; }
             // 팝업이나 입력창이 열려있으면 단축키 무시
-            if (isActionBarVisible || tagDialogOpen || helpOpen) return;
+            if (isActionBarVisible || tagDialogOpen || helpOpen || isCompareOpen) return;
 
             // 1. 화면 뒤집기 (정답 확인): ., Space, s
             if (e.key === '.' || e.key === ' ' || e.key === 's') {
@@ -221,7 +239,7 @@ const ReviewSession = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [toggleAnswer, handleMarkAsReviewed, isBrowsingCompleted, isPeeking, browseNext, browsePrev, peekPrev, peekNext, exitPeek, isActionBarVisible, verse, tagDialogOpen, helpOpen]);
+    }, [toggleAnswer, handleMarkAsReviewed, isBrowsingCompleted, isPeeking, browseNext, browsePrev, peekPrev, peekNext, exitPeek, isActionBarVisible, verse, tagDialogOpen, helpOpen, isCompareOpen]);
 
     const handleCopyVerse = () => {
         if (!verse) return;
@@ -236,7 +254,8 @@ const ReviewSession = ({
         onFooterClick: () => setIsActionBarVisible(true), currentIndex, remainingToday,
         // 등불판: 상태 시트가 열린 채 도움말을 누르면 시트를 먼저 닫는다(도움말이 시트 밑에 깔리지 않게, N7)
         onHelpClick: IS_LAMP ? () => { setIsActionBarVisible(false); onHelpClick(); } : onHelpClick, actions, dailyProgress,
-        onAutoPlay: handleAutoPlay, isAutoPlaying: isAutoPlaying, isPeeking
+        onAutoPlay: handleAutoPlay, isAutoPlaying: isAutoPlaying, isPeeking,
+        onCompareSameRef: sameRefGroup ? handleCompareOpen : null, isCompareOpen,
     };
 
     return (
@@ -257,6 +276,7 @@ const ReviewSession = ({
                 </Slide>
             )}
             <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
+            <SameRefDialog open={isCompareOpen} onClose={() => setIsCompareOpen(false)} group={sameRefGroup} currentId={verse?.id} disableRestoreFocus={reviewView === 'typing'} />
             <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Box>
     );

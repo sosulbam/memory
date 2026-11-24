@@ -20,6 +20,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AudioFileIcon from '@mui/icons-material/AudioFile';
 import { PaperFront, PaperBack } from './PaperVerseCard';
+import { SameRefPrompt } from './SameRefCompare';
 import { LampFocusHeader, LampFocusBar } from './LampFocus';
 import { IS_LAMP, LAMP_LOOK } from '../edition';
 
@@ -104,7 +105,7 @@ const StatusDisplay = ({ verse }) => {
     return (<Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)', fontStyle: 'italic', pl: 2 }}>{`상태: ${statuses.join(', ')}`}</Typography>);
 };
 
-const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStats, versesCount, onClick, onFooterClick, isBrowsingCompleted, onToggleBrowseMode, currentIndex, remainingToday, onHelpClick, dailyProgress, onAutoPlay, isAutoPlaying, actions, isPeeking }) => {
+const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStats, versesCount, onClick, onFooterClick, isBrowsingCompleted, onToggleBrowseMode, currentIndex, remainingToday, onHelpClick, dailyProgress, onAutoPlay, isAutoPlaying, actions, isPeeking, onCompareSameRef }) => {
     const { mode, targetTurn, targetTurnForNew, targetTurnForRecent, isFocusMode, fontSize, completedSortOrder, fontType, ttsOrder, voiceURI, speechRate, ttsInterval, audioPriority, cardStyle } = settings;
     // 집중모드 카드 보기에서만 종이 카드 (설정 「카드 모양: 기본」이면 종전 화면)
     const usePaper = isFocusMode && cardStyle !== 'classic' && !!verse;
@@ -435,6 +436,9 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
         </Box>
     );
 
+    // 같은 장절이 정규구절 안에 또 있으면 카드 아래에 안내 + [비교하기] (#354, 전체 완료 구절 둘러보기에선 안 띄움)
+    const sameRefPrompt = verse && onCompareSameRef && !isBrowsingCompleted ? <SameRefPrompt onOpen={onCompareSameRef} /> : null;
+
     const FrontContent = () => (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
             <Box sx={{ mb: 2 }}>
@@ -452,6 +456,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
                     </>)}
                 </Typography>
             )}
+            {sameRefPrompt && <Box sx={{ mt: 2 }}>{sameRefPrompt}</Box>}
         </Box>
     );
 
@@ -460,12 +465,12 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5, width: '100%', px: 2, pt: 'calc(100px + var(--sat))', pb: 'calc(80px + var(--sab))', boxSizing: 'border-box', minHeight: '100%', justifyContent: 'center',
             ...(IS_LAMP ? { pt: 'calc(108px + var(--sat))', pb: 'calc(96px + var(--sab))',
                 // 세로 화면 긴 구절: 카드 본문을 남는 높이까지(R7)
-                '& [data-card-scroll]': { maxHeight: 'max(38vh, calc(100vh - 420px))' },
+                '& [data-card-scroll]': { maxHeight: sameRefPrompt ? 'max(110px, calc(38vh - 64px), calc(100vh - 484px))' : 'max(38vh, calc(100vh - 420px))' },
                 // 가로·낮은 화면: 머리줄 바로 아래부터, 본문은 카드 안에서 스크롤(카드가 머리줄 밑으로 들어가지 않게)
                 '@media (max-height:500px)': { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', pt: 'calc(56px + var(--sat))', pb: 'calc(64px + var(--sab))', gap: 2,
                   '& .lamp-turn': { display: 'none' }, '& .lamp-tts': { flexDirection: 'column', mt: 0, gap: 1 },
                   '& [data-card-scroll]': { maxHeight: 'calc(100vh - 230px)' }, '& .paper-face': { minHeight: 'auto', py: 1.5 } } } : {}) }}>
-            {showAnswer ? <PaperBack verse={verse} fontSize={fontSize} /> : <PaperFront verse={verse} fontSize={fontSize} />}
+            {showAnswer ? <PaperBack verse={verse} fontSize={fontSize} compact={!!sameRefPrompt} /> : <PaperFront verse={verse} fontSize={fontSize} />}
             <TTSControls />
             {!showAnswer && mode.startsWith('turnBased') && (
                 <Typography className="lamp-turn" variant="subtitle1" sx={{ fontSize: '1.05rem', userSelect: 'none' }}>
@@ -476,6 +481,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
                     </>)}
                 </Typography>
             )}
+            {sameRefPrompt}
         </Box>
     );
 
@@ -496,6 +502,7 @@ const VerseCard = ({ verse, showAnswer, themeKey, settings, setters, sessionStat
                     <Typography variant="body1" sx={{ width: '100%', textAlign: 'center', lineHeight: 1.7, whiteSpace: 'pre-line', wordBreak: 'keep-all', fontSize: bodySizeMap[fontSize] || bodySizeMap.medium, ...fontStyle }}>
                         {verse?.본문}
                     </Typography>
+                    {sameRefPrompt && <Box sx={{ mt: 2 }}>{sameRefPrompt}</Box>}
                 </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'flex-end', mt: 1, pt: 1, width: '100%', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.1)' }}>

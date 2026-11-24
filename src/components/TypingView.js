@@ -12,6 +12,7 @@ import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import HistoryIcon from '@mui/icons-material/History';
 import { IS_LAMP, LAMP_LOOK } from '../edition';
 import { LampFocusHeader, LampFocusBar } from './LampFocus';
+import { SameRefPrompt } from './SameRefCompare';
 import { formatRefFull } from '../utils/refFormat';
 
 const calculateDaysAgoText = (reviewDateStr) => {
@@ -129,7 +130,7 @@ const FocusModeFooter = ({ onFooterClick }) => (
     </Box>
 );
 
-const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionStats, versesCount, isBrowsingCompleted, onToggleBrowseMode, onFooterClick, currentIndex, remainingToday, onHelpClick, actions, dailyProgress }) => {
+const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionStats, versesCount, isBrowsingCompleted, onToggleBrowseMode, onFooterClick, currentIndex, remainingToday, onHelpClick, actions, dailyProgress, onCompareSameRef, isCompareOpen }) => {
   const [completedWords, setCompletedWords] = useState([]);
   const inputRef = useRef(null);
   const isMobile = useMemo(() => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent), []);
@@ -151,6 +152,11 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
   useEffect(() => {
     setCompletedWords([]);
   }, [verse]);
+
+  // 같은 장절 비교 창을 닫으면 타이핑 입력칸으로 포커스를 돌려준다 (#354)
+  useEffect(() => {
+    if (!isCompareOpen && !isMobile) inputRef.current?.focus();
+  }, [isCompareOpen, isMobile]);
 
   const advanceWord = () => {
     if (isVerseComplete) return;
@@ -269,6 +275,7 @@ const TypingView = ({ verse, onComplete, themeKey, settings, setters, sessionSta
       >
         {verse ? (IS_LAMP ? formatRefFull(verse.장절) : `${verse.장절} — ${verse.카테고리}`) : (isBrowsingCompleted ? '완료한 구절이 없습니다.' : '로딩 중...')}
       </Typography>
+      {verse && onCompareSameRef && !isBrowsingCompleted && <Box sx={{ mb: 1 }}><SameRefPrompt onOpen={onCompareSameRef} /></Box>}
 
       <Typography variant="h5" sx={{ flexGrow: 1, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', textAlign: 'center', alignContent: 'center', userSelect: 'text' }}>
         {isBrowsingCompleted ? verse?.본문 : completedWords.join(' ')}
