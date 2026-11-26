@@ -259,7 +259,9 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   }, [isBrowsingCompleted, versesToReview.length, index]);
 
   const handleMarkAsReviewed = useCallback(() => {
-    if (!versesToReview[index] || mode === 'pending' || isBrowsingCompleted) return;
+    if (!versesToReview[index] || isBrowsingCompleted) return;
+    // 미암송 관리: 외움 표시(복습날짜·미암송여부) 없이 다음 구절로만 — 지금 구절은 줄 맨 뒤로(#385)
+    if (mode === 'pending') { skipCurrent(); return; }
     const verseToComplete = versesToReview[index];
     const now = new Date();
     const todayStr = `${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`;
@@ -331,7 +333,7 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
     setVersesToReview(prev => prev.filter(v => v.id !== verseToComplete.id));
     setShowAnswer(false);
-  }, [versesToReview, index, mode, isBrowsingCompleted, targetTurn, targetTurnForNew, targetTurnForRecent, updateVerseStatus, showSnackbar, dailyProgress, sessionCompleted]);
+  }, [versesToReview, index, mode, isBrowsingCompleted, targetTurn, targetTurnForNew, targetTurnForRecent, updateVerseStatus, showSnackbar, dailyProgress, sessionCompleted, skipCurrent]);
 
   return {
     verse: isPeeking

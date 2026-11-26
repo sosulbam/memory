@@ -126,6 +126,31 @@ function VerseRow({ verse, allVerses, tags, onStatusToggle, onTagDialogOpen, onC
   );
 }
 
+// 쪽 넘김 — 폰 폭(384px 갤럭시 S21)에서 MUI 기본 모양은 「Rows per page」 글자에 밀려 ▶ 가 화면 밖으로 나갔다(#385).
+// 좁은 화면은 글자를 줄이고, 넘치면 줄을 바꿔 ‹ › 가 늘 화면 안에 있게 한다. 목록 위·아래 두 곳에 둔다
+function ListPager({ count, page, rowsPerPage, options, onPageChange, onRowsPerPageChange, sx }) {
+  const opts = options.includes(rowsPerPage) ? options : [...options, rowsPerPage].sort((a, b) => a - b);
+  return (
+    <TablePagination
+      component="div" count={count} page={page} rowsPerPage={rowsPerPage} rowsPerPageOptions={opts}
+      onPageChange={onPageChange} onRowsPerPageChange={onRowsPerPageChange}
+      labelRowsPerPage="쪽당"
+      labelDisplayedRows={({ from, to, count: c }) => `${from}–${to} / ${c}`}
+      getItemAriaLabel={(type) => ({ first: '첫 쪽', last: '마지막 쪽', next: '다음 쪽', previous: '이전 쪽' }[type])}
+      sx={{
+        overflow: 'visible',
+        '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', justifyContent: 'flex-end', px: { xs: 0.5, sm: 2 }, minHeight: 52 },
+        '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } },
+        '& .MuiTablePagination-selectLabel': { m: 0 },
+        '& .MuiTablePagination-input': { mr: { xs: 1, sm: 3 }, ml: { xs: 0.5, sm: 1 } },
+        '& .MuiTablePagination-displayedRows': { m: 0, fontSize: { xs: '0.8rem', sm: '0.875rem' } },
+        '& .MuiTablePagination-actions': { ml: { xs: 0.5, sm: 2 } },
+        ...sx,
+      }}
+    />
+  );
+}
+
 function VerseList() {
   const [showFilters, setShowFilters] = React.useState(false);
   const { isLoading, originalVerses: allVerses, tagsData, updateVerseStatus, updateTags } = useContext(DataContext);
@@ -449,13 +474,19 @@ function VerseList() {
   const handleCardExpand = (verseId) => setExpandedCardId(prevId => (prevId === verseId ? null : verseId));
   const handleFilterChange = (field, value) => { setFilters(prev => ({ ...prev, [field]: value })); setPagination(prev => ({ ...prev, page: 0 })); };
 
-  const handleChangePage = (event, newPage) => setPagination(prev => ({ ...prev, page: newPage }));
+  const listTopRef = useRef(null);
+  // 아래쪽 쪽 넘김을 누르면 새 쪽의 첫 구절부터 보이게 목록 머리로 올린다
+  const handleChangePage = (event, newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    const el = listTopRef.current;
+    if (el && el.getBoundingClientRect().top < 0) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 72 });
+  };
   const handleChangeRowsPerPage = (event) => setPagination({ page: 0, rowsPerPage: parseInt(event.target.value, 10) });
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}><CircularProgress /></Box>;
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 } }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 3 }, pb: { xs: 'calc(72px + var(--sab))', sm: 'calc(24px + var(--sab))' } }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Typography variant="subtitle1">총 <strong>{filteredVerses.length}</strong>개 구절</Typography>
 
@@ -503,6 +534,10 @@ function VerseList() {
         </Box>
       )}
 
+      <Box ref={listTopRef} />
+      {filteredVerses.length > pagination.rowsPerPage && (
+        <ListPager count={filteredVerses.length} page={pagination.page} rowsPerPage={pagination.rowsPerPage} options={viewType === 'list' ? [12, 25, 50, 100] : [12, 24, 48, 96]} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} sx={{ mb: 1 }} />
+      )}
       {viewType === 'list' ? (
         <Paper elevation={3}>
           <TableContainer>
@@ -523,7 +558,7 @@ function VerseList() {
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination rowsPerPageOptions={[12, 25, 50, 100]} component="div" count={filteredVerses.length} rowsPerPage={pagination.rowsPerPage} page={pagination.page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+          <ListPager count={filteredVerses.length} page={pagination.page} rowsPerPage={pagination.rowsPerPage} options={[12, 25, 50, 100]} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
         </Paper>
       ) : (
         <Box>
@@ -539,7 +574,7 @@ function VerseList() {
               </Grid>
             ))}
           </Grid>
-          <TablePagination rowsPerPageOptions={[12, 24, 48, 96]} component="div" count={filteredVerses.length} rowsPerPage={pagination.rowsPerPage} page={pagination.page} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} />
+          <ListPager count={filteredVerses.length} page={pagination.page} rowsPerPage={pagination.rowsPerPage} options={[12, 24, 48, 96]} onPageChange={handleChangePage} onRowsPerPageChange={handleChangeRowsPerPage} sx={{ mt: 1 }} />
         </Box>
       )}
 
