@@ -10,6 +10,8 @@ import SystemUpdateIcon from '@mui/icons-material/SystemUpdate';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { THEMES, THEME_LABELS } from '../constants';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import SyncSettings from '../components/SyncSettings';
+import { SYNC_ENABLED } from '../api/syncApi';
 import { TOP_OPTIONS, BOTTOM_OPTIONS, BUILD_ID, loadSafeArea, saveSafeArea, measureCss } from '../utils/safeArea';
 
 // 문제 진단용 한 줄 — 사용자가 캡처해 보내면 새 버전 여부·폰이 알려 주는 여백을 바로 알 수 있다
@@ -92,6 +94,13 @@ const SettingsPage = () => {
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', p: 2, pb: 6 }}>
+
+      {/* 기기 연결 — 동기화 코드 (#396) */}
+      {SYNC_ENABLED && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+          <SyncSettings SectionTitle={SectionTitle} />
+        </Paper>
+      )}
 
       {/* 복습 카드 폰트 크기 */}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>

@@ -5,6 +5,7 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import { applySafeArea, loadSafeArea } from './utils/safeArea';
+import { syncOnStart } from './api/syncApi';
 import { ThemeProvider, CssBaseline, GlobalStyles } from '@mui/material';
 import { IS_LAMP, LAMP_LOOK } from './edition';
 import { lampTheme, lampBaseTheme } from './lampTheme';
@@ -19,7 +20,8 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 
 console.log("2. React root 생성 완료");
 
-root.render(
+// 동기화 코드를 쓰는 기기면 다른 기기의 변경을 먼저 받고(최대 3초) 그린다 (#396)
+syncOnStart().then(() => root.render(
   <React.StrictMode>
     {LAMP_LOOK ? (
       // 등불판 먹색·아이보리 테마(지금은 꺼 둠 — edition.js LAMP_LOOK)
@@ -31,7 +33,7 @@ root.render(
       <App />
     )}
   </React.StrictMode>
-);
+));
 
 console.log("3. App 컴포넌트 렌더링 시도");
 // --- 👆 여기까지 ---

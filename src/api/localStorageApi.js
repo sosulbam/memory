@@ -1,4 +1,5 @@
 // src/api/localStorageApi.js
+import { noteLocalSave } from './syncApi';
 
 /**
  * 키(key)에 해당하는 데이터를 로컬 스토리지에서 불러옵니다.
@@ -40,6 +41,8 @@ export const saveDataToLocal = (key, data) => {
     }
     const serializedData = JSON.stringify(data);
     localStorage.setItem(key, serializedData);
+    // 동기화 코드를 쓰는 기기면 다른 기기로 보낼 것으로 표시 (#396)
+    noteLocalSave(key, data);
   } catch (error) {
     console.error(`[Local Storage] Error saving ${key}:`, error);
   }
