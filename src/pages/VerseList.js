@@ -198,7 +198,7 @@ function VerseList() {
       const matchTag = !tagSearchLower || (tagsData[v.id] || []).some(tag => tag.toLowerCase().includes(tagSearchLower));
       const matchCategory = filters.selectedCategory === '전체' || v.카테고리 === filters.selectedCategory;
       const matchSubcategory = filters.selectedSubcategory === '전체' || v.소카테고리 === filters.selectedSubcategory;
-      const matchType = filters.typeFilter === '전체' || (filters.typeFilter === '뉴구절' && v.뉴구절여부) || (filters.typeFilter === '최근구절' && v.최근구절여부) || (filters.typeFilter === '오답구절' && v.오답여부) || (filters.typeFilter === '즐겨찾기' && v.즐겨찾기);
+      const matchType = filters.typeFilter === '전체' || (filters.typeFilter === '미암송' && v.미암송여부) || (filters.typeFilter === '뉴구절' && v.뉴구절여부) || (filters.typeFilter === '최근구절' && v.최근구절여부) || (filters.typeFilter === '오답구절' && v.오답여부) || (filters.typeFilter === '즐겨찾기' && v.즐겨찾기);
       return matchSearch && matchTag && matchCategory && matchSubcategory && matchType;
     });
   }, [allVerses, tagsData, debouncedSearchText, debouncedTagSearchText, filters.selectedCategory, filters.selectedSubcategory, filters.typeFilter]);
