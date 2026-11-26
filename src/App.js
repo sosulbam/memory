@@ -24,6 +24,7 @@ import TagManager from './pages/TagManager';
 import UsageGuide from './pages/UsageGuide';
 import ReviewLogPage from './pages/ReviewLogPage';
 import RecitationTestPage from './pages/RecitationTestPage';
+import LampTestPage from './pages/LampTestPage'; // 등불판 시험(#400) — 기본판은 종전 RecitationTestPage
 import SettingsPage from './pages/SettingsPage';
 import VerseTreePage from './pages/VerseTreePage';
 import PacksPage from './pages/PacksPage';
@@ -199,7 +200,7 @@ function App() {
                 <Route path="/tags" element={<TagManager />} />
                 <Route path="/guide" element={<UsageGuide />} />
                 <Route path="/log" element={<ReviewLogPage />} />
-                <Route path="/test" element={<RecitationTestPage />} />
+                <Route path="/test" element={IS_LAMP ? <LampTestPage /> : <RecitationTestPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/tree" element={<VerseTreePage />} />
                 {IS_LAMP && <Route path="/packs" element={<PacksPage />} />}

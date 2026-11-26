@@ -25,9 +25,12 @@ export const SYNC_KEYS = [
   'recitation-app-last-app-state',
   'recitation-app-theme',
   'recitation-app-versetree-prefs',
+  'recitation-app-test-scores',   // 시험 확정 점수(#400) — 받을 때 id 로 합친다(MERGE_BY_ID)
 ];
 // voiceURI: 기기마다 음성 목록이 달라 핑퐁 · isFocusMode: 집중모드 들고 날 때마다 설정을 보내지 않게(복원도 안 하는 값)
 const LOCAL_ONLY_FIELDS = { 'recitation-app-last-app-state': ['voiceURI', 'isFocusMode'] };
+// 한 줄씩 쌓이는 기록 — 키 통째 「마지막 저장 우선」이면 두 기기가 따로 쌓은 줄이 사라지므로, 받을 때 id 로 합친다
+const MERGE_BY_ID = ['recitation-app-test-scores'];
 const META_KEY = 'verse-sync';
 const PUSH_DELAY_MS = 1500;
 const KEEPALIVE_MAX = 60 * 1024; // keepalive 요청 본문 한도(64KB) 안쪽만 이탈 때 보낸다
@@ -60,8 +63,19 @@ const sanitize = (key, data) => {
 };
 const readLocal = (key) => { try { const s = localStorage.getItem(key); return s === null || s === 'undefined' ? undefined : JSON.parse(s); } catch { return undefined; } };
 // 받은 값 넣기 — 기기별 필드는 이 기기 값을 살린다. saveDataToLocal 을 거치지 않으므로 「보낼 것」이 되지 않는다
-const applyLocal = (key, payload) => {
+// 합친 결과에 이 기기에만 있던 줄이 있으면 true(호출 쪽이 다시 보낼 것으로 표시한다)
+const applyLocal = (key, payload, { merge = true } = {}) => {
   let value = payload;
+  if (merge && MERGE_BY_ID.includes(key) && Array.isArray(payload)) {
+    const cur = readLocal(key);
+    if (Array.isArray(cur) && cur.length) {
+      const seen = new Map();
+      [...payload, ...cur].forEach((r) => { if (r && r.id && !seen.has(r.id)) seen.set(r.id, r); });
+      const merged = [...seen.values()];
+      localStorage.setItem(key, JSON.stringify(merged));
+      return merged.length > payload.length;
+    }
+  }
   const fields = LOCAL_ONLY_FIELDS[key];
   if (fields && value && typeof value === 'object' && !Array.isArray(value)) {
     const cur = readLocal(key) || {};
@@ -70,6 +84,7 @@ const applyLocal = (key, payload) => {
   }
   if (value === undefined || value === null) localStorage.removeItem(key);
   else localStorage.setItem(key, JSON.stringify(value));
+  return false;
 };
 const api = async (path, opts = {}) => {
   const res = await fetch(`${SYNC_API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, cache: 'no-store' });
@@ -116,10 +131,11 @@ export const pushDirty = async ({ keepalive = false } = {}) => {
         m.lastOk = Date.now(); lastError = null;
         writeMeta(m);
       } else if (r.status === 409 && r.body) {
-        applyLocal(key, r.body.payload);
+        const keepMine = applyLocal(key, r.body.payload);
         m.versions = { ...(m.versions || {}), [key]: r.body.syncedAt };
-        m.hashes = { ...(m.hashes || {}), [key]: hash(JSON.stringify(sanitize(key, r.body.payload))) };
+        m.hashes = { ...(m.hashes || {}), [key]: hash(JSON.stringify(sanitize(key, keepMine ? readLocal(key) : r.body.payload))) };
         if (m.dirty) delete m.dirty[key];
+        if (keepMine) m.dirty = { ...(m.dirty || {}), [key]: Date.now() }; // 합친 줄을 다음에 보낸다
         m.lastOk = Date.now(); lastError = null;
         writeMeta(m);
         replaced = true;
@@ -160,14 +176,17 @@ export const pull = async () => {
       if (r.status !== 200) { lastError = 'server'; return changed; }
       const m = readMeta();
       if (!m || m.code !== m0.code) return changed;
+      let again = false;
       Object.entries(r.body.docs || {}).forEach(([key, doc]) => {
-        applyLocal(key, doc.payload);
+        const keepMine = applyLocal(key, doc.payload);
         m.versions = { ...(m.versions || {}), [key]: doc.syncedAt };
-        m.hashes = { ...(m.hashes || {}), [key]: hash(JSON.stringify(sanitize(key, doc.payload))) };
+        m.hashes = { ...(m.hashes || {}), [key]: hash(JSON.stringify(sanitize(key, keepMine ? readLocal(key) : doc.payload))) };
         if (m.dirty) delete m.dirty[key];
+        if (keepMine) { m.dirty = { ...(m.dirty || {}), [key]: Date.now() }; again = true; } // 이 기기에만 있던 줄 → 다시 보냄
         changed.push(key);
       });
       writeMeta(m);
+      if (again) { clearTimeout(pushTimer); pushTimer = setTimeout(() => { pushDirty(); }, PUSH_DELAY_MS); }
     }
     const m = readMeta();
     if (m) { m.lastOk = Date.now(); writeMeta(m); }
@@ -213,7 +232,7 @@ export const joinCode = async (raw) => {
   SYNC_KEYS.forEach((key) => {
     const doc = docs[key];
     if (doc) {
-      applyLocal(key, doc.payload);
+      applyLocal(key, doc.payload, { merge: false }); // 코드 넣기 = 이 기기 기록을 코드 기록으로 바꾼다
       versions[key] = doc.syncedAt;
       hashes[key] = hash(JSON.stringify(sanitize(key, doc.payload)));
     } else if (key !== 'recitation-app-last-app-state' && key !== 'recitation-app-theme') {

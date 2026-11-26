@@ -7,7 +7,7 @@ export const APP_NAME = IS_LAMP ? '등불 암송' : '말씀사랑';
 export const PUBLIC_URL = process.env.PUBLIC_URL || '';
 
 // 등불판 버전(설정 맨 아래에 한 줄로 보인다) — 배포할 때 올린다
-export const LAMP_VERSION = '1.2 (2026-11-16)';
+export const LAMP_VERSION = '1.3 (2026-11-26)';
 
 // 등불판 겉모양(먹색·아이보리·명조·평평한 테마) — 2026-11-16 부장님 「암송도 기존의 앱을 그대로」로 끔.
 // 끄면 화면은 기존 암송앱 그대로, 등불에서 넣은 기능(팩·일정 창·다시/외웠어요·초기화 3택 등)은 IS_LAMP 로 남는다.
