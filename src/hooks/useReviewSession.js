@@ -26,6 +26,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   const [peekIndex, setPeekIndex] = useState(0);
 
   const ignoreNextFilterRef = useRef(false);
+  // 마지막 구절 완료 → 다음 필터 회차에서 건너뛰지 않고 재필터(완주 판정 포함) — 개인판 2026-11-08 수정과 같다
+  const lastVerseCheckRef = useRef(false);
   const todayStr = `${new Date().getFullYear()}. ${new Date().getMonth() + 1}. ${new Date().getDate()}`;
 
   const resetTurnCompletion = useCallback(() => {
@@ -43,7 +45,10 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
   useEffect(() => {
     if (ignoreNextFilterRef.current) {
       ignoreNextFilterRef.current = false;
-      return;
+      // 마지막 구절을 끝낸 직후면 건너뛰지 않고 아래 재필터로 완주를 판정한다 (남은 구절이 없어 순서가 섞일 일도 없다).
+      // 전엔 여기서 항상 return 해서, 집중모드에서 다 마친 순간엔 어느 모드도 완주를 몰랐다(다음에 앱을 열 때에야 감지).
+      if (!lastVerseCheckRef.current) return;
+      lastVerseCheckRef.current = false;
     }
 
     if (!originalVerses || !originalVerses.length) {
@@ -85,7 +90,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
     const base = mode === 'pending' ? originalVerses.filter(baseFilter[mode]) : activeVerses.filter(baseFilter[mode] || (() => true));
 
-    let remainingList = base.filter(v => !completionCheck[mode](v));
+    const notDoneList = base.filter(v => !completionCheck[mode](v));
+    let remainingList = notDoneList;
     
     // --- [수정] 오답구절만보기 필터 적용 ---
     if (order === 'incorrect_only') {
@@ -94,7 +100,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
     const completedList = base.filter(v => completionCheck[mode](v));
 
-    if ((mode.startsWith('turnBased') || mode === 'category') && remainingList.length === 0 && base.length > 0) {
+    // 완주는 「오답구절만보기」로 거르기 전 목록으로 판정한다 — 거른 목록으로 보면 오답만 끝내도 차수 완주로 잡힌다
+    if ((mode.startsWith('turnBased') || mode === 'category') && notDoneList.length === 0 && base.length > 0) {
         setIsTurnCompleted(true);
     }
 
@@ -333,6 +340,8 @@ export const useReviewSession = (originalVerses, settings, updateVerseStatus, sh
 
     setVersesToReview(prev => prev.filter(v => v.id !== verseToComplete.id));
     setShowAnswer(false);
+    // 완료 직후엔 재필터를 건너뛰므로(ignoreNextFilterRef) 마지막 구절이면 표시해 두고 다음 회차에서 완주를 판정한다
+    if (versesToReview.length === 1) lastVerseCheckRef.current = true;
   }, [versesToReview, index, mode, isBrowsingCompleted, targetTurn, targetTurnForNew, targetTurnForRecent, updateVerseStatus, showSnackbar, dailyProgress, sessionCompleted, skipCurrent]);
 
   return {

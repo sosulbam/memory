@@ -10,6 +10,8 @@ import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import SendIcon from '@mui/icons-material/Send';
+import CheckIcon from '@mui/icons-material/Check';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { THEMES, MODES } from '../constants';
 import { IS_LAMP, LAMP_LOOK } from '../edition';
 
@@ -71,6 +73,69 @@ const ReviewReadyInfo = ({ verses, settings, remainingToday }) => {
     );
 };
 
+// ── 개인판에서 옮김(#395, 2026-11-26): 빠른 모드 오늘 상태 색 · 차수 마감 · 새 복습 플랜 안내 ──
+// 빠른 모드 선택 버튼의 오늘 상태별 색 (done=완료 / progress=진행 중 / idle·null=시작 전)
+const STATUS_SX = {
+    done: {
+        color: 'success.dark', bgcolor: 'rgba(46,125,50,0.10)', fontWeight: 'bold',
+        '&.Mui-selected': { bgcolor: 'success.main', color: '#fff', '&:hover': { bgcolor: 'success.dark' } },
+    },
+    progress: {
+        color: 'warning.dark', bgcolor: 'rgba(237,108,2,0.12)', fontWeight: 'bold',
+        '&.Mui-selected': { bgcolor: 'warning.main', color: '#fff', '&:hover': { bgcolor: 'warning.dark' } },
+    },
+};
+const STATUS_ICON = {
+    done: <CheckIcon sx={{ fontSize: 15, mr: 0.4 }} />,
+    progress: <FiberManualRecordIcon sx={{ fontSize: 9, mr: 0.6 }} />,
+};
+// 좁은 폰 폭에서도 글자가 잘리지 않게: 단어 단위로 두 줄로 접힌다
+const QUICK_BTN_SX = { px: 0.5, py: 0.7, fontSize: '0.8rem', lineHeight: 1.25, whiteSpace: 'normal', wordBreak: 'keep-all' };
+const Legend = ({ color, label }) => (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', mx: 0.8 }}>
+        <FiberManualRecordIcon sx={{ fontSize: 9, mr: 0.4, color }} />{label}
+    </Box>
+);
+
+// 마감 표시 색 — 여유 / 3일 이하 / 오늘 마감·초과
+const DEADLINE_COLOR = { normal: 'text.secondary', warn: 'warning.dark', danger: 'error.main' };
+
+const TurnDeadline = ({ deadline }) => {
+    if (!deadline) return null;
+    return (
+        <Typography
+            variant="body2"
+            sx={{ mb: 1, fontWeight: deadline.missing ? 'normal' : 'bold', color: deadline.missing ? 'text.secondary' : DEADLINE_COLOR[deadline.tone] }}
+        >
+            📅 {deadline.turn}차 마감 {deadline.missing ? '일정 미등록' : `${deadline.endLabel} (${deadline.text})`}
+        </Typography>
+    );
+};
+
+const PlanPrompt = ({ prompt, onNewPlan, onDismiss }) => (
+    <Box data-testid="plan-prompt" sx={{ border: '1.5px solid', borderColor: 'primary.main', bgcolor: 'rgba(44,110,117,0.07)', borderRadius: 2, p: 1.5, mb: 2, textAlign: 'left', display: 'grid', gap: 1 }}>
+        {prompt.type === 'done' ? (
+            <>
+                <Typography sx={{ fontWeight: 700 }}>🎉 {prompt.turn}차 복습을 모두 마쳤어요</Typography>
+                <Typography variant="body2">{prompt.turn + 1}차 복습 플랜을 세울까요? 몇 가지만 물어볼게요.</Typography>
+            </>
+        ) : (
+            <>
+                <Typography sx={{ fontWeight: 700 }}>📅 {prompt.turn}차 마감({prompt.endLabel})이 지났어요</Typography>
+                <Typography variant="body2">남은 {prompt.remaining}구절을 이어서 할까요, 새 플랜을 세울까요?</Typography>
+            </>
+        )}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="contained" size="small" onClick={() => onNewPlan && onNewPlan(prompt.type === 'done' ? 'turnDone' : 'overdue')}>
+                {prompt.type === 'done' ? '플랜 세우기' : '새 플랜 세우기'}
+            </Button>
+            <Button variant="outlined" size="small" onClick={onDismiss}>
+                {prompt.type === 'done' ? '나중에' : '이어서 하기'}
+            </Button>
+        </Box>
+    </Box>
+);
+
 const LAMP_EMPTY_HINT = {
     turnBasedNew: '새로 외울 구절이 없습니다. 암송 팩에서 「새로 외울 구절」로 넣거나, 구절의 상태에서 「새 구절」을 켜세요.',
     turnBasedRecent: '최근 구절로 표시한 구절이 없습니다. 구절의 상태에서 「최근」을 켜면 여기에 모입니다.',
@@ -80,6 +145,7 @@ const LAMP_EMPTY_HINT = {
 const ReviewDashboard = ({
     settings, setters, verses, remainingToday, onStartReview, favoriteVerse, themeKey, onAdvanceTurn,
     modePoolCount, hasSchedule, onOpenSchedule, schedule, todayReviewedCount = 0, onShareToday,
+    modeStatus = null, turnDeadline = null, onNewPlan, planPrompt = null, onDismissPrompt,
 }) => {
     const { fontType, mode, targetTurn, targetTurnForNew, targetTurnForRecent } = settings;
 
@@ -195,16 +261,34 @@ const ReviewDashboard = ({
                     <Paper sx={{ p: 1.5, borderRadius: '10px' }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>빠른 모드 선택</Typography>
                         <ToggleButtonGroup value={settings.mode} exclusive onChange={handleModeChange} aria-label="quick mode select" fullWidth size="small">
-                            <ToggleButton value="turnBasedReview">차수별 복습</ToggleButton>
-                            <ToggleButton value="turnBasedNew">{IS_LAMP ? '새 구절' : '차수별 뉴구절'}</ToggleButton>
-                            <ToggleButton value="turnBasedRecent">{IS_LAMP ? '최근 구절' : '차수별 최근'}</ToggleButton>
+                            {[
+                                { value: 'turnBasedReview', label: '차수별 복습' },
+                                { value: 'turnBasedNew', label: IS_LAMP ? '새 구절' : '차수별 뉴구절' },
+                                { value: 'turnBasedRecent', label: IS_LAMP ? '최근 구절' : '차수별 최근' },
+                            ].map(({ value, label }) => {
+                                const status = modeStatus && modeStatus[value];
+                                return (
+                                    <ToggleButton key={value} value={value} sx={modeStatus ? { ...QUICK_BTN_SX, ...(STATUS_SX[status] || {}) } : undefined}>
+                                        {STATUS_ICON[status] || null}{label}
+                                    </ToggleButton>
+                                );
+                            })}
                         </ToggleButtonGroup>
+                        {modeStatus && (
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', mt: 0.8 }}>
+                                <Legend color="success.main" label="오늘 완료" />
+                                <Legend color="warning.main" label="진행 중" />
+                                <Legend color="text.disabled" label="시작 전" />
+                            </Typography>
+                        )}
                     </Paper>
                 </Box>
                 <Box sx={{ p: '2px', borderRadius: 3, backgroundImage: THEMES[themeKey], boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                     <Paper sx={{ p: 2, textAlign: 'center', borderRadius: '10px' }}>
+                        {planPrompt && <PlanPrompt prompt={planPrompt} onNewPlan={onNewPlan} onDismiss={onDismissPrompt} />}
                         <Box>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
+                            <Typography variant="h6" gutterBottom={!turnDeadline} sx={{ fontWeight: 'bold' }}>오늘의 복습</Typography>
+                            <TurnDeadline deadline={turnDeadline} />
                             {modeIsEmpty ? (
                                 filtered ? (
                                     // 분류를 걸어 둔 탓이면 그 분류를 보여 준다(R4)
@@ -241,7 +325,14 @@ const ReviewDashboard = ({
                         >
                             복습 시작하기
                         </Button>
-                        {canAdvanceTurn && (
+                        {onNewPlan && (
+                            <Button variant="outlined" onClick={() => onNewPlan('manual')}
+                                sx={{ mt: 1, width: '100%', py: 1, borderStyle: 'dashed', fontWeight: 600 }}>
+                                ＋ 새 복습 플랜
+                            </Button>
+                        )}
+                        {/* 차수별 복습의 다음 차수는 일정이 필요해 「새 복습 플랜」 안내(위 배너)로 정한다 */}
+                        {canAdvanceTurn && !(onNewPlan && mode === 'turnBasedReview') && (
                             <Button
                                 variant="outlined"
                                 size="large"

@@ -204,3 +204,78 @@ export const buildTreeReviewData = (originalVerses, mode, settings = {}, turnSch
     doneTodayCount,
   };
 };
+
+// ── 개인판에서 옮김(#395, 2026-11-26) — 날짜는 이 앱 복습날짜 형식(getReviewDateStr) ──
+// 홈 「빠른 모드 선택」 버튼용 — 해당 모드의 "오늘" 진행 상태.
+//   'done'     : 오늘 할 것이 남지 않음
+//   'progress' : 오늘 한 개 이상 복습했지만 아직 남음
+//   'idle'     : 오늘 복습 기록 없음
+//   null       : 대상 구절이 없어 판정 불가
+// 판정 규칙:
+//   - 복습구절 + 오늘이 차수 일정 안: 「오늘 남은 구절」(getDailyReviewGoal)이 0이면 done
+//   - 그 외(뉴구절·최근구절, 일정 없는 복습구절): 대상 전부가 오늘 날짜로 복습됐거나 차수 잔여 0이면 done
+//   오늘 복습 수는 base 기준(완료 판정과 무관)으로 센다 — 뉴/최근은 완주 즉시 다음 차수로 자동 진급해
+//   completed가 비어 버리므로, completed 기준으로 세면 다 한 직후에 '시작 전'으로 되돌아간다.
+export const getTodayModeStatus = (originalVerses, mode, settings = {}, turnScheduleData = {}) => {
+  const { base, remaining } = getTurnBasedScope(originalVerses, mode, settings);
+  if (!base.length) return null;
+
+  const todayStr = getReviewDateStr();
+  const doneToday = base.filter((v) => v.복습날짜 === todayStr).length;
+
+  let inSchedule = false;
+  if (mode === 'turnBasedReview' && turnScheduleData) {
+    const schedule = turnScheduleData[settings.targetTurn || 1];
+    if (schedule && schedule.startDate && schedule.endDate) {
+      const start = new Date(schedule.startDate);
+      const end = new Date(schedule.endDate);
+      const today = new Date();
+      [start, end, today].forEach((d) => d.setHours(0, 0, 0, 0));
+      inSchedule = today >= start && today <= end;
+    }
+  }
+
+  if (inSchedule) {
+    const goal = getDailyReviewGoal(originalVerses, mode, settings, turnScheduleData);
+    if (goal === 0) return 'done';
+    return doneToday > 0 ? 'progress' : 'idle';
+  }
+
+  if (remaining.length === 0 || doneToday >= base.length) return 'done';
+  return doneToday > 0 ? 'progress' : 'idle';
+};
+
+// 홈 「오늘의 복습」 마감 표시용 — 현재 차수 일정의 종료일과 남은 날짜.
+// 차수별 복습(turnBasedReview)만 일정을 갖는다 → 다른 모드는 null(표시 안 함).
+// 일정이 등록되지 않은 차수면 { missing: true }.
+//   tone: 'normal'(여유) | 'warn'(3일 이하) | 'danger'(오늘 마감·초과)
+// 날짜 정규화는 getDailyReviewGoal과 똑같이 `new Date(문자열)` + setHours(0,0,0,0)를 쓴다 —
+// 방식을 달리하면 "오늘 마감"인데 오늘 분량은 이미 0인 식으로 경계가 어긋난다.
+export const getTurnDeadline = (mode, settings = {}, turnScheduleData = {}) => {
+  if (mode !== 'turnBasedReview') return null;
+  const turn = settings.targetTurn || 1;
+  const schedule = turnScheduleData ? turnScheduleData[turn] : null;
+  if (!schedule || !schedule.endDate) return { turn, missing: true };
+
+  const end = new Date(schedule.endDate);
+  const today = new Date();
+  [end, today].forEach((d) => d.setHours(0, 0, 0, 0));
+  if (Number.isNaN(end.getTime())) return { turn, missing: true };
+
+  const daysLeft = Math.round((end - today) / 86400000);
+  const endLabel = `${end.getMonth() + 1}. ${end.getDate()}.`;
+
+  let text;
+  let tone;
+  if (daysLeft > 0) {
+    text = `${daysLeft}일 남음`;
+    tone = daysLeft <= 3 ? 'warn' : 'normal';
+  } else if (daysLeft === 0) {
+    text = '오늘 마감';
+    tone = 'danger';
+  } else {
+    text = `${-daysLeft}일 지남`;
+    tone = 'danger';
+  }
+  return { turn, missing: false, endLabel, daysLeft, text, tone };
+};

@@ -13,9 +13,11 @@ import ReviewDashboard from '../components/ReviewDashboard';
 import ReviewSession from '../components/ReviewSession';
 import TagDialog from '../components/TagDialog';
 import ShareTodayDialog from '../components/ShareTodayDialog';
+import PlanWizard from '../components/PlanWizard';
 import { getTodayReviewed } from '../utils/shareToday';
 import { THEMES } from '../constants';
 import { advanceToNextTurn, TURN_MODE_META } from '../utils/reviewActions';
+import { getTodayModeStatus, getTurnDeadline, getTurnBasedScope, getDailyReviewGoal, TURN_BASED_MODES } from '../utils/reviewScope';
 import { Link as RouterLink, useOutletContext } from 'react-router-dom';
 import { IS_LAMP, LAMP_LOOK } from '../edition';
 
@@ -121,6 +123,77 @@ const HomePage = () => {
   }, [originalVerses, mode, settings]);
   const hasSchedule = !!(turnScheduleData && turnScheduleData[targetTurn] && turnScheduleData[targetTurn].startDate && turnScheduleData[targetTurn].endDate);
 
+  // ── 개인판에서 옮김(#395, 2026-11-26): 빠른 모드 오늘 상태 · 차수 마감 · 「새 복습 플랜」 문답 ──
+  // 기본판만. 등불판은 자기 「일정 정하기」 창을 그대로 쓴다(등불 재배포는 따로 정한다)
+  const USE_PLAN = !IS_LAMP;
+  // 「새 복습 플랜」 문답 (reason: manual | turnDone | overdue)
+  const [plan, setPlan] = useState({ open: false, reason: 'manual' });
+  // 홈 안내 배너를 「나중에/이어서 하기」로 닫은 기록 — 같은 차수의 같은 안내는 다시 띄우지 않는다 (기기별)
+  const PLAN_PROMPT_KEY = 'recitation-app-plan-prompt-dismissed';
+  const [dismissedPrompt, setDismissedPrompt] = useState(() => { try { return localStorage.getItem(PLAN_PROMPT_KEY) || ''; } catch { return ''; } });
+
+  // 빠른 모드 선택 버튼용 — 세 차수별 모드의 오늘 진행 상태 (done / progress / idle)
+  const modeStatus = useMemo(() => {
+    if (!USE_PLAN) return null;
+    const result = {};
+    TURN_BASED_MODES.forEach(({ value }) => {
+      result[value] = getTodayModeStatus(originalVerses, value, settings, turnScheduleData);
+    });
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalVerses, turnScheduleData, settings.selectedCategories, settings.selectedSubcategories, settings.targetTurn, settings.targetTurnForNew, settings.targetTurnForRecent]);
+
+  // 현재 차수 마감 표시 (차수별 복습만 — 뉴구절·최근구절은 일정 개념이 없다)
+  const turnDeadline = useMemo(
+    () => (USE_PLAN ? getTurnDeadline(mode, settings, turnScheduleData) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, settings.targetTurn, turnScheduleData]
+  );
+
+  // 홈 안내: 차수별 복습을 다 마쳤거나, 마감이 지났는데 남은 구절이 있을 때
+  const planPrompt = useMemo(() => {
+    if (!USE_PLAN || mode !== 'turnBasedReview' || !originalVerses) return null;
+    const { base, remaining } = getTurnBasedScope(originalVerses, mode, settings);
+    if (!base.length) return null;
+    let p = null;
+    if (remaining.length === 0) p = { type: 'done', turn: targetTurn };
+    else if (turnDeadline && !turnDeadline.missing && turnDeadline.daysLeft < 0) p = { type: 'overdue', turn: targetTurn, remaining: remaining.length, endLabel: turnDeadline.endLabel };
+    if (!p || dismissedPrompt === `${p.type}-${p.turn}`) return null;
+    return p;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, targetTurn, originalVerses, settings.selectedCategories, settings.selectedSubcategories, turnDeadline, dismissedPrompt]);
+
+  const dismissPlanPrompt = () => {
+    if (!planPrompt) return;
+    const key = `${planPrompt.type}-${planPrompt.turn}`;
+    try { localStorage.setItem(PLAN_PROMPT_KEY, key); } catch { /* 저장 못 해도 이번 화면에선 닫힘 */ }
+    setDismissedPrompt(key);
+  };
+
+  // 문답에서 「시작하기」 — 설정(모드·범위·순서·차수)과 차수 일정을 저장하고 바로 집중모드로
+  const handleStartPlan = (p) => {
+    setters.setMode(p.mode);
+    setters.setSelectedCategories(p.cats);
+    setters.setSelectedSubcategories(['전체']);
+    setters.setOrder(p.order);
+    const meta = TURN_MODE_META[p.mode];
+    if (meta && p.turn) setters[meta.setter](p.turn);
+    let schedule = turnScheduleData;
+    if (p.mode === 'turnBasedReview' && p.startDate && p.endDate) {
+      // 다른 차수의 일정은 그대로 두고 이 차수만 넣는다
+      schedule = { ...(turnScheduleData || {}), [p.turn]: { startDate: p.startDate, endDate: p.endDate } };
+      setTurnScheduleData(schedule);
+      saveDataToLocal(TURN_SCHEDULE_KEY, schedule);
+    }
+    // 오늘 분량은 바뀐 설정으로 바로 계산해 넘긴다 (홈의 목표량 이펙트는 한 박자 늦게 돈다)
+    const goal = getDailyReviewGoal(originalVerses, p.mode, { ...settings, selectedCategories: p.cats, selectedSubcategories: ['전체'], targetTurn: p.mode === 'turnBasedReview' ? p.turn : settings.targetTurn }, schedule);
+    setSessionTodaysGoal(goal || 0);
+    setPlan({ open: false, reason: 'manual' });
+    const label = meta ? `${meta.label} ${p.turn}차` : (p.mode === 'category' ? '카테고리별 복습' : '오답 복습');
+    showSnackbar(`새 복습 플랜을 시작합니다 — ${label}`, 'success');
+    setIsFocusMode(true);
+  };
+
   const remainingToday = useMemo(() => {
     if (mode !== 'turnBasedReview') return null;
     if (IS_LAMP && todaysGoal === null) return null;
@@ -151,6 +224,7 @@ const HomePage = () => {
 
   // 대시보드에서 직접 다음 차수 시작 (다이얼로그를 닫았거나 이미 완주 상태로 들어온 경우)
   const handleAdvanceTurn = (turnMode) => {
+    if (USE_PLAN && turnMode === 'turnBasedReview') { setPlan({ open: true, reason: 'turnDone' }); return; }
     const meta = TURN_MODE_META[turnMode];
     if (!meta) return;
     const nextTurn = advanceToNextTurn(turnMode, settings, setters);
@@ -173,11 +247,17 @@ const HomePage = () => {
     }
     if (mode !== 'category' && mode !== 'turnBasedReview') return;
 
+    resetTurnCompletion();
+    if (USE_PLAN && mode === 'turnBasedReview') {
+      // 새 차수는 일정(시작·마감)이 있어야 하므로 「다음 차수 시작 → 설정에서 일정 등록」 대신 문답으로 바로 정한다.
+      // 집중모드에서 방금 마친 경우에만 자동으로 연다 — 홈에 들어올 때마다 뜨지 않게(홈은 배너로 묻는다)
+      if (isFocusMode) setPlan({ open: true, reason: 'turnDone' });
+      return;
+    }
     // ⚠️ 지연(setTimeout) 없이 즉시 연다. settings/setters는 렌더마다 새 객체라
     //    이 이펙트가 매 렌더 재실행되며, 예약해 둔 타이머는 cleanup에 취소돼 버린다.
-    resetTurnCompletion();
     setResetConfirm({ open: true, mode, turn: mode === 'turnBasedReview' ? targetTurn : 0 });
-  }, [isTurnCompleted, mode, targetTurn, targetTurnForNew, targetTurnForRecent, resetTurnCompletion, settings, setters, showSnackbar]);
+  }, [isTurnCompleted, mode, targetTurn, targetTurnForNew, targetTurnForRecent, resetTurnCompletion, settings, setters, showSnackbar, isFocusMode, USE_PLAN]);
 
   useEffect(() => {
     if (!originalVerses) return;
@@ -246,6 +326,9 @@ const HomePage = () => {
             onOpenSchedule={openSchedule}
             todayReviewedCount={todayReviewedCount}
             onShareToday={() => setShareOpen(true)}
+            modeStatus={modeStatus} turnDeadline={turnDeadline}
+            onNewPlan={USE_PLAN ? (reason = 'manual') => setPlan({ open: true, reason }) : undefined}
+            planPrompt={planPrompt} onDismissPrompt={dismissPlanPrompt}
           />
           <TagDialog open={tagDialogOpen} onClose={() => setTagDialogOpen(false)} verse={verse} tags={tagsData} onSaveTags={updateTags} />
         </Container>
@@ -293,6 +376,11 @@ const HomePage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {USE_PLAN && (
+        <PlanWizard open={plan.open} reason={plan.reason} onClose={() => setPlan({ open: false, reason: 'manual' })}
+          onStart={handleStartPlan} originalVerses={originalVerses} settings={settings} />
+      )}
 
       <ShareTodayDialog open={shareOpen} onClose={() => setShareOpen(false)} verses={originalVerses} />
     </>
