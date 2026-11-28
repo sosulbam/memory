@@ -47,6 +47,8 @@ export const VERSETREE_PREFS_KEY = 'recitation-app-versetree-prefs';
 export const DAILY_RESET_KEY = 'recitation-app-daily-reset';
 // 암송 시험 확정 점수 기록 — 한 문제 = 한 줄 [{ id: testId:verseId, … }] (#400, 등불판)
 export const TEST_SCORES_KEY = 'recitation-app-test-scores';
+// 이미 받은 구절 데이터에 한 번만 돌리는 고침 — 돌린 고침 id 목록 (#409, utils/verseFixes.js)
+export const VERSE_FIXES_KEY = 'recitation-app-verse-fixes';
 
 // 등불판 테마: 그라데이션 대신 한 가지 색(사이트 톤). 키는 기본판과 같게 둬 저장된 값이 그대로 통한다
 const flat = (c) => `linear-gradient(${c}, ${c})`;

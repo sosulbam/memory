@@ -9,6 +9,7 @@ import {
 } from '../constants';
 import { getKSTDateString } from '../utils/dateUtils';
 import { IS_LAMP, PUBLIC_URL } from '../edition';
+import { applyVerseFixes } from '../utils/verseFixes';
 
 export const useVerseData = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +59,13 @@ export const useVerseData = () => {
       } catch (error) { 
         console.error('Error fetching initial verses', error); 
       }
+    }
+
+    // 이미 받아 둔 구절에 고침을 한 번 반영(#409) — 소카테고리만 바뀌고 기록은 id 로 그대로
+    const fixed = applyVerseFixes(finalVerses);
+    if (fixed.changed) {
+      finalVerses = fixed.verses;
+      saveDataToLocal(VERSES_DATA_KEY, finalVerses);
     }
 
     setRawVerses(finalVerses);
